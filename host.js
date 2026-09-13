@@ -1173,6 +1173,7 @@ const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = IS_MAC ? '⌘' : 'Ctrl';
 const SHORTCUTS = [
   [[MOD, 'K'], 'Search a page or paste a URL'],
+  [['⇧', '⌥', MOD, 'Space'], 'Screenshot everything on screen — menus, tooltips and notes included'],
   [['⇧', MOD, 'I'], 'Toggle Inspect (rulers come with it)'],
   [['Shift'], 'Hold to peek at hover boxes and rulers'],
   [['Shift', 'Click'], 'While peeking: turn Inspect on and select that element'],
@@ -1193,6 +1194,7 @@ function buildKeysList() {
 }
 function toggleKeys() { const pop = $('pt-keys-pop'); if (pop.classList.contains('pt-open') && !pop.classList.contains('pt-closing')) hidePop(pop); else { showPop(pop); anchorPop(pop, $('pt-keys-btn'), { align: 'center', above: true }); } }
 function focusSearch() { el.omni.focus(); el.omni.select(); renderResults(el.omni.value); }
+function isShotShortcut(e) { return (e.metaKey || e.ctrlKey) && e.shiftKey && e.altKey && (e.key === ' ' || e.code === 'Space'); }   // ⇧⌥⌘Space
 function isSearchShortcut(e) { return (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key || '').toLowerCase() === 'k'; }
 function isInspectShortcut(e) { return (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key || '').toLowerCase() === 'i'; }
 
@@ -1204,6 +1206,7 @@ function bindRulersAndBg() {
   document.addEventListener('keydown', (e) => {
     if (isInspectShortcut(e)) { e.preventDefault(); toggleInspectShortcut(); return; }   // ⇧⌘I
     if (isSearchShortcut(e)) { e.preventDefault(); focusSearch(); return; }              // ⌘K
+    if (isShotShortcut(e)) { e.preventDefault(); screenshot({ everything: true }); return; }   // ⇧⌥⌘Space: capture the screen as it is
     if (e.key === 'Shift' && !e.repeat) setPeek(true);
     const tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
@@ -1314,13 +1317,22 @@ function moveActive(delta) { const rows = Array.from(el.results.querySelectorAll
 
 let rasterizerPromise = null;
 function loadRasterizer() { if (window.htmlToImage) return Promise.resolve(window.htmlToImage); if (rasterizerPromise) return rasterizerPromise; rasterizerPromise = new Promise((resolve, reject) => { const s = document.createElement('script'); s.src = PT_BASE + 'vendor/html-to-image.js'; s.onload = () => resolve(window.htmlToImage); s.onerror = () => reject(new Error('missing')); document.head.appendChild(s); }); return rasterizerPromise; }
-async function screenshot() {
+// everything visible on screen right now, in stacking order: menus, tooltip, guide menu, gap readouts, sheets, notes…
+function visibleOverlays() {
+  const sel = '.pt-dim-pop.pt-open, .pt-omni-results.pt-open, .pt-menu-pop.pt-open, #pt-ctx:not([hidden]), #pt-gbox:not([hidden]), #pt-gaps .pt-gap, #pt-tip:not([hidden]), #pt-confirm:not([hidden]) .pt-confirm-card, .pt-sheet:not([hidden]) .pt-sheet-card';
+  const nodes = [...document.querySelectorAll(sel)].filter((n) => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(n).visibility !== 'hidden'; });
+  const z = (n) => { let e = n; while (e && e !== document.body) { const v = parseInt(getComputedStyle(e).zIndex, 10); if (!isNaN(v)) return v; e = e.parentElement; } return 0; };
+  return nodes.sort((a, b) => z(a) - z(b));
+}
+// everything = ⇧⌥⌘Space: whatever is on screen (menus, tooltips, sheets, notes, the toolbar) is part of the picture
+async function screenshot({ everything = false } = {}) {
   if (state.frameMode !== 'full') { toast('Screenshots need a same-origin page (external pages are cross-origin).'); return; }
   let lib; try { lib = await loadRasterizer(); } catch (e) { toast('Add vendor/html-to-image.js to enable screenshots'); return; }
   el.shot.disabled = true; el.stage.classList.add('pt-scanning');   // dim + scan lines until the image is ready
   try {
     const doc = el.frame.contentDocument, dpr = window.devicePixelRatio || 1;
-    const inspecting = state.mode === 'inspect' || state.rulers;
+    const extras = everything ? visibleOverlays() : [];
+    const inspecting = state.mode === 'inspect' || state.rulers || everything;
     let dataUrl;
     if (!inspecting) {
       dataUrl = await lib.toPng(doc.documentElement, { width: state.w, height: state.h, backgroundColor: '#ffffff', pixelRatio: dpr, cacheBust: true, style: { transform: 'none' } });
@@ -1331,7 +1343,9 @@ async function screenshot() {
       // overlays first, so the canvas can grow to include any that hang outside the stage
       const overlays = [];
       if (!el.selbox.hidden) overlays.push(el.selbox);
-      Object.values(modalEls).forEach((m) => overlays.push(m));
+      if (everything) overlays.push(el.bar);
+      Object.values(modalEls).sort((a, b) => (+a.style.zIndex || 0) - (+b.style.zIndex || 0)).forEach((m) => overlays.push(m));
+      extras.forEach((n) => { if (!overlays.includes(n)) overlays.push(n); });
       let minX = vr.left - R, minY = vr.top - R, maxX = vr.right, maxY = vr.bottom;
       overlays.forEach((nd) => { const r = nd.getBoundingClientRect(); minX = Math.min(minX, r.left); minY = Math.min(minY, r.top); maxX = Math.max(maxX, r.right); maxY = Math.max(maxY, r.bottom); });
       const W = Math.round(maxX - minX), H = Math.round(maxY - minY);
@@ -1362,7 +1376,7 @@ async function screenshot() {
       }
       dataUrl = out.toDataURL('image/png');
     }
-    const a = document.createElement('a'); a.download = `infospector-${(state.pageKey || 'page').replace(/[^\w]+/g, '-')}-${state.w}x${state.h}${inspecting ? '-inspect' : ''}.png`; a.href = dataUrl; a.click();
+    const a = document.createElement('a'); a.download = `infospector-${(state.pageKey || 'page').replace(/[^\w]+/g, '-')}-${state.w}x${state.h}${everything ? '-screen' : inspecting ? '-inspect' : ''}.png`; a.href = dataUrl; a.click();
     toast('Screenshot saved');
   } catch (e) { toast('Screenshot failed — a cross-origin image may have tainted it'); }
   finally { el.stage.classList.remove('pt-scanning'); el.shot.disabled = false; }
@@ -1507,6 +1521,7 @@ function bind() {
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
     else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in
     else if (d.type === 'focusSearch') focusSearch();               // ⌘K pressed while the frame had focus
+    else if (d.type === 'shotAll') screenshot({ everything: true }); // ⇧⌥⌘Space pressed while the frame had focus
     else if (d.type === 'peek') setPeek(d.on);                        // Shift held/released while the frame had focus
     else if (d.type === 'pinClicked') openModal(d.id, { reveal: true });
   });

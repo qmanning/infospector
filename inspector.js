@@ -484,6 +484,7 @@
   document.addEventListener('keydown', function (e) {
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key || '').toLowerCase() === 'i') { e.preventDefault(); send('toggleInspect'); return; }
     if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key || '').toLowerCase() === 'k') { e.preventDefault(); send('focusSearch'); return; }
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.altKey && (e.key === ' ' || e.code === 'Space')) { e.preventDefault(); send('shotAll'); return; }
     if (e.key === 'Shift' && !e.repeat && mode !== 'inspect') { setPeek(true); send('peek', { on: true }); }
   }, true);
   document.addEventListener('keyup', function (e) { if (e.key === 'Shift') { setPeek(false); send('peek', { on: false }); } }, true);
