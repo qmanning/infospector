@@ -514,7 +514,21 @@ function addNoteToSelected() {
 /* ---------------- reveal + ruler bridge ------------------------------ */
 
 function setReveal(selector, on) { if (selector) postToFrame({ type: 'reveal', selector, on }); }
-function setRuler(selector, on) { if (!selector) return; if (on) state.activeRulers.add(selector); else state.activeRulers.delete(selector); postToFrame({ type: 'ruler', selector, on }); }
+// "Ruler wrap": four of our guides (two per axis) snapped to the element's edges, tagged with the
+// selector so they move together, follow the element, and go away when the wrap is turned off
+function setRuler(selector, on) {
+  if (!selector) return;
+  if (on) state.activeRulers.add(selector); else { state.activeRulers.delete(selector); wrapGuides(selector, null); }
+  postToFrame({ type: 'ruler', selector, on });   // on: the frame answers with rulerRect
+}
+function wrapGuides(selector, rect) {
+  state.guides = state.guides.filter((g) => g.for !== selector);
+  if (rect) {
+    const add = (axis, pos) => state.guides.push({ id: uid('g'), axis, pos: Math.round(pos), for: selector });
+    add('y', rect.y); add('y', rect.y + rect.height); add('x', rect.x); add('x', rect.x + rect.width);
+  }
+  saveGuides(); renderGuides();
+}
 function toggleSelectedRuler() {
   const sel = state.selected; if (!sel || !sel.anchor.selector) return;
   const selr = sel.anchor.selector, on = !state.activeRulers.has(selr);
@@ -1465,6 +1479,7 @@ function bind() {
     else if (d.type === 'hoverCleared') { if (!state.selPinned) { clearTimeout(state.hoverTimer); state.hoverTimer = setTimeout(() => { if (!state.selPinned) hideSelbox(); }, 350); } }
     else if (d.type === 'cleared') { if (state.selected) hideSelbox(); }
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
+    else if (d.type === 'rulerRect') { if (state.activeRulers.has(d.selector)) wrapGuides(d.selector, d.rect); }   // element measured (or moved) → snap guides to its edges
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
     else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in
     else if (d.type === 'focusSearch') focusSearch();               // ⌘K pressed while the frame had focus
