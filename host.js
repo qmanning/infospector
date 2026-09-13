@@ -68,6 +68,7 @@ const ICONS = {
   grip: svg('<circle cx="12" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="19" r="1"/><circle cx="5" cy="19" r="1"/>'),
   grid3: svg('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'),
   diagonal: svg('<path d="M3 21L21 3M3 13L13 3M11 21L21 11M19 21L21 19M3 5L4.5 3.5"/>'),
+  upload: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>'),
   copy: svg('<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'),
   trash: svg('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6M14 11v6"/>'),
   x: svg('<path d="M18 6 6 18M6 6l12 12"/>'),
@@ -92,7 +93,7 @@ const el = {
   selbox: $('pt-selbox'), sbName: $('pt-sb-name'), sbSel: $('pt-sb-sel'), sbInfo: $('pt-sb-info'), addNote: $('pt-add-note'), rulerBtn: $('pt-ruler'),
   rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
-  colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), import2: $('pt-import-2'),
+  colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'),
   apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'),
   apBlur: $('pt-ap-blur'), apBacking: $('pt-ap-backing'), apSat: $('pt-ap-sat'), apLight: $('pt-ap-light'), apDark: $('pt-ap-dark'), apTint: $('pt-ap-tint'), apColor: $('pt-ap-color'), apColorTxt: $('pt-ap-color-txt'), apReset: $('pt-ap-reset'),
   modals: $('pt-modals'), toast: $('pt-toast')
@@ -459,12 +460,21 @@ function pushPins() {
     id: t.id, count: t.notes.length, remaining: t.notes.filter((n) => n.state !== 'done').length, state: aggState(t), anchor: t.anchor
   })) });
 }
-// toolbar notes button: hidden with no notes, otherwise badged with the page's total
+// toolbar notes button: with no notes it's a plain Import button; otherwise the badged notes
+// pill whose menu holds Copy all / Export / Import / Clear
 function updateNotesBadge() {
   const n = docForSave().targets.reduce((a, t) => a + t.notes.length, 0);
-  el.menu.hidden = n === 0;
-  const b = el.menuBtn.querySelector('.pt-badge'); if (b) { b.textContent = String(n); b.classList.toggle('pt-wide', n > 9); }
-  if (n === 0) hidePop(el.menuPop);
+  state.notesEmpty = n === 0;
+  el.menuBtn.classList.toggle('pt-badge-btn', n > 0);
+  if (n === 0) {
+    el.menuBtn.innerHTML = ICONS.upload; el.menuBtn.dataset.tip = 'Import notes'; el.menuBtn.setAttribute('aria-label', 'Import notes');
+    hidePop(el.menuPop);
+  } else {
+    el.menuBtn.innerHTML = ICONS.notebookPen + '<span class="pt-badge">' + n + '</span>';
+    el.menuBtn.querySelector('.pt-badge').classList.toggle('pt-wide', n > 9);
+    el.menuBtn.dataset.tip = 'Notes on this page · export, import, clear'; el.menuBtn.setAttribute('aria-label', 'Notes');
+  }
+  layoutBar();   // the pill and the round button differ in width
 }
 
 /* ---------------- notes actions -------------------------------------- */
@@ -1014,7 +1024,6 @@ function bindRulersAndBg() {
   el.colGround.addEventListener('input', () => { state.bg.groundColor = el.colGround.value; state.bg.groundTheme = currentTheme(); applyBg(); });
   const bindTxt = (inp, key) => inp.addEventListener('change', () => { const v = parseColor(inp.value); if (!v) { inp.classList.add('pt-invalid'); return; } state.bg[key] = v; state.bg[key === 'patternColor' ? 'patternTheme' : 'groundTheme'] = currentTheme(); applyBg(); });
   bindTxt(el.colPatternTxt, 'patternColor'); bindTxt(el.colGroundTxt, 'groundColor');
-  el.import2.addEventListener('click', () => { closeCtx(); el.importInput.click(); });
   // Appearance sliders drive the glass recipe live
   const slide = (inp, key, parse) => inp.addEventListener('input', () => { state.glass[key] = parse(inp.value); applyGlass(); });
   slide(el.apBlur, 'blur', Number); slide(el.apSat, 'sat', Number); slide(el.apBacking, 'backing', Number); slide(el.apLight, 'light', Number); slide(el.apDark, 'dark', Number); slide(el.apTint, 'tint', Number);
@@ -1167,7 +1176,6 @@ function bindTips() {
 
 function bind() {
   el.inspect.innerHTML = ICONS.crosshair; el.shot.innerHTML = ICONS.camera;
-  el.menuBtn.innerHTML = ICONS.notebookPen + '<span class="pt-badge">0</span>';
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
   el.addNote.innerHTML = ICONS.notebookPen; el.rulerBtn.innerHTML = ICONS.ruler;
   updateThemeIcon();
@@ -1202,7 +1210,7 @@ function bind() {
 
   el.inspect.addEventListener('click', () => setInspect(state.mode !== 'inspect'));
   el.shot.addEventListener('click', screenshot);
-  el.menuBtn.addEventListener('click', () => { if (el.menuPop.classList.contains('pt-open') && !el.menuPop.classList.contains('pt-closing')) hidePop(el.menuPop); else { showPop(el.menuPop); anchorPop(el.menuPop, el.menuBtn, { align: 'right' }); } });
+  el.menuBtn.addEventListener('click', () => { if (state.notesEmpty) { el.importInput.click(); return; } if (el.menuPop.classList.contains('pt-open') && !el.menuPop.classList.contains('pt-closing')) hidePop(el.menuPop); else { showPop(el.menuPop); anchorPop(el.menuPop, el.menuBtn, { align: 'right' }); } });
   el.copyAllBtn.addEventListener('click', () => { const text = allNotesText(); if (text) copyText(text); else toast('No notes on this page'); hidePop(el.menuPop); });
   el.exportBtn.addEventListener('click', () => { exportNotes(); hidePop(el.menuPop); });
   el.importBtn.addEventListener('click', () => { el.importInput.click(); hidePop(el.menuPop); });

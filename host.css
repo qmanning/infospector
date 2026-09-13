@@ -224,6 +224,8 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-ctx-title { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--pt-text-dim);   /* same ink as the labels */ padding: 5px 10px 3px; }
 .pt-ctx-item { display: flex; align-items: center; width: 100%; text-align: left; border: none; background: transparent; color: var(--pt-text); font: 13px var(--pt-font); padding: 7px 10px 7px 26px; border-radius: 11px; cursor: pointer; position: relative; }   /* 18 − 6 − 1 */
 .pt-ctx-item:hover { background: var(--pt-accent-soft); }
+.pt-ctx-actions { display: flex; gap: 6px; padding: 8px 4px 2px; }
+.pt-ctx-actions .pt-mini { display: inline-flex; flex: 1 1 0; height: 32px; justify-content: center; font-size: 12px; border-radius: 11px; }   /* 18 − 6 − 1 */
 .pt-ctx-item.pt-active::before { content: "✓"; position: absolute; left: 10px; color: var(--pt-accent); font-weight: 700; }
 .pt-ctx-range { display: flex; align-items: center; gap: 8px; padding: 5px 10px 4px; font-size: 12px; color: var(--pt-text-dim); }
 .pt-ctx-range > span { width: 72px; }
