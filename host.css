@@ -15,7 +15,7 @@
   --pt-text-faint: #6d7481;
   --pt-accent: #4f8cff;                                                  /* one highlight color for everything interactive (Colors → Accent) */
   --pt-accent-soft: color-mix(in srgb, var(--pt-accent) 20%, transparent);
-  --pt-fit: var(--pt-accent);                                            /* fit mode uses the accent too; the trigger shows the scale */
+  --pt-fit: #f7a63b;                                                     /* fit mode (stage scaled down): orange, on purpose, distinct from the accent */
   --pt-danger: #ff6b6b;
   --pt-ruler: #e5484d;                 /* guides */
   --pt-ruler-bg: rgba(0, 0, 0, 0.10);  /* ruler strips: black alpha over a blurred backdrop, so they follow any ground color */
@@ -123,7 +123,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 }
 .pt-dim-trigger:hover { border-color: var(--pt-glass-brd-strong); }
 .pt-dim-trigger.pt-fit-glow { border-color: var(--pt-fit); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pt-fit) 30%, transparent); }
-.pt-dim-scale { margin-left: 6px; font-weight: 500; opacity: .7; }   /* "· 74%" while fitting */
+.pt-dim-scale { margin-left: 6px; font-weight: 600; color: var(--pt-fit); }   /* "· 74%" while fitting, in the fit orange */
 .pt-dim-val, .pt-chev { height: 28px; border: none; background: transparent; color: var(--pt-text); cursor: pointer; border-radius: 14px; }
 .pt-dim-val { padding: 0 6px 0 9px; font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; }
 .pt-dim-val:hover { background: var(--pt-glass); }

@@ -157,7 +157,7 @@ function fit() {
   const fitting = !state.fillMode && s < 1;
   document.body.classList.toggle('pt-fit', fitting);
   el.dimTrigger.classList.toggle('pt-fit-glow', fitting);
-  el.dimVal.innerHTML = `${state.w} × ${state.h}` + (fitting ? `<span class="pt-dim-scale">· ${Math.round(s * 100)}%</span>` : '');
+  el.dimVal.innerHTML = `${state.w} × ${state.h}` + (fitting ? `<span class="pt-dim-scale" data-tip="Scaled to Show All">· ${Math.round(s * 100)}%</span>` : '');
   drawRulers();
   positionGuides();
   placeSelbox();
