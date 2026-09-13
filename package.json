@@ -1,0 +1,17 @@
+{
+  "name": "infospector",
+  "version": "0.1.0",
+  "description": "A portable, zero-dependency visual review & annotation tool you drop into any web project.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test test/unit/*.test.mjs",
+    "test:e2e": "playwright test",
+    "serve": "node test/serve.mjs 7377"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}
