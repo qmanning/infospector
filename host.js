@@ -28,7 +28,7 @@ L.setColorFallback((css) => { try { const c = document.createElement('canvas').g
 
 const PRESETS = [
   { w: 1920, h: 1080, name: 'HD', shape: 'browser', r: BROWSER_R },
-  { w: 1878, h: 2670, name: 'iPhone Duo Inner', shape: 'device', r: 44 },
+  { w: 2670, h: 1878, name: 'iPhone Duo Inner', shape: 'device', r: 44 },
   { w: 1440, h: 1024, name: 'Figma', shape: 'browser', r: BROWSER_R },
   { w: 1398, h: 2034, name: 'iPhone Duo Outer', shape: 'device', r: 55 },
   { w: 1280, h: 960, name: 'iPad Pro', shape: 'device', r: 18 },
@@ -70,6 +70,7 @@ const ICONS = {
   diagonal: svg('<path d="M3 21L21 3M3 13L13 3M11 21L21 11M19 21L21 19M3 5L4.5 3.5"/>'),
   keyboard: svg('<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>'),
   shredder: svg('<path d="M10 22v-5"/><path d="M14 19v-2"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M18 20v-3"/><path d="M2 13h20"/><path d="M20 13V7l-5-5H6a2 2 0 0 0-2 2v9"/><path d="M6 20v-3"/>'),
+  arrowLeftRight: svg('<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>'),
   rotateCcw: svg('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'),
   upload: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>'),
   copy: svg('<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'),
@@ -87,7 +88,7 @@ const $ = (id) => document.getElementById(id);
 const el = {
   dim: $('pt-dim'), dimTrigger: $('pt-dim-trigger'), dimVal: $('pt-dim-val'), dimChev: $('pt-dim-chev'), dimPop: $('pt-dim-pop'),
   dimW: $('pt-dim-w'), dimH: $('pt-dim-h'),
-  bar: $('pt-bar'), tip: $('pt-tip'), inspect: $('pt-inspect'), shot: $('pt-shot'), theme: $('pt-theme'),
+  bar: $('pt-bar'), tip: $('pt-tip'), rotate: $('pt-rotate'), inspect: $('pt-inspect'), shot: $('pt-shot'), theme: $('pt-theme'),
   omniWrap: $('pt-omni'), omni: $('pt-omni-input'), omniIcon: $('pt-omni-icon'), omniClear: $('pt-omni-clear'), results: $('pt-omni-results'),
   menu: $('pt-menu'), menuBtn: $('pt-menu-btn'), menuPop: $('pt-menu-pop'),
   copyAllBtn: $('pt-copy-all'), exportBtn: $('pt-export'), importBtn: $('pt-import'), clearBtn: $('pt-clear'), importInput: $('pt-import-input'),
@@ -218,6 +219,8 @@ function setSize(w, h, { animate = true, fill = false, shape = null, custom = fa
   persistSize();
   requestAnimationFrame(fit);
 }
+// 5. Rotate = swap the stage's width and height (landscape ↔ portrait); the canvas itself never turns
+function rotateSize() { setSize(state.h, state.w, { shape: state.shape, custom: state.custom }); }
 function enterFill() { const a = availArea(); setSize(a.w, a.h, { fill: true }); }
 function enterCustom({ focus = true } = {}) {
   setSize(state.w, state.h, { custom: true });
@@ -1503,7 +1506,7 @@ function bindTips() {
 }
 
 function bind() {
-  el.inspect.innerHTML = ICONS.vectorSquare; el.shot.innerHTML = ICONS.camera;
+  el.rotate.innerHTML = ICONS.arrowLeftRight; el.inspect.innerHTML = ICONS.vectorSquare; el.shot.innerHTML = ICONS.camera;
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
   el.apReset.innerHTML = ICONS.rotateCcw;
   $('pt-g-note').innerHTML = ICONS.notebookPen; $('pt-g-del').innerHTML = ICONS.trash; $('pt-g-clear').innerHTML = ICONS.shredder;
@@ -1542,6 +1545,7 @@ function bind() {
   });
   window.addEventListener('resize', () => { hidePop(el.results); hidePop(el.menuPop); closeDim(); });
 
+  el.rotate.addEventListener('click', rotateSize);
   el.inspect.addEventListener('click', () => setInspect(state.mode !== 'inspect'));
   el.shot.addEventListener('click', screenshot);
   $('pt-keys-btn').addEventListener('click', toggleKeys);
@@ -1579,8 +1583,9 @@ function bind() {
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
     else if (d.type === 'snapLines') state.snap = { x: d.x || [], y: d.y || [] };
     else if (d.type === 'gapHover') showGaps(d.x, d.y, d.mod);
-    else if (d.type === 'frameDown') { if (state.selectedGuide) selectGuide(null); hideOpenModals(); }   // a click into the page deselects the guide and hides open notes
+    else if (d.type === 'frameDown') { if (state.selectedGuide) selectGuide(null); hideOpenModals(); el.stage.classList.remove('pt-edge-hover'); }   // a click into the page deselects the guide and hides open notes
     else if (d.type === 'rulerRect') { if (state.activeRulers.has(d.selector)) wrapGuides(d.selector, d.rect, { create: !!state.wrapPending && state.wrapPending === d.selector }); if (state.wrapPending === d.selector) state.wrapPending = null; }   // element measured (or moved) → snap guides to its edges
+    else if (d.type === 'escape') escapeAll();                     // Esc pressed while the frame had focus
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
     else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in
     else if (d.type === 'focusSearch') focusSearch();               // ⌘K pressed while the frame had focus
