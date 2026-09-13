@@ -53,7 +53,8 @@ function normState(s) { return STATES.includes(s) ? s : (LEGACY_STATES[s] || 'op
 const PT_BASE = location.pathname.replace(/[^/]*$/, '');
 // page to open on launch: ?url=…, else window.INFOSPECTOR_HOME, else this origin's homepage,
 // else (not served over http, e.g. opened from disk) the demo site
-const DEFAULT_HOME = (location.protocol === 'http:' || location.protocol === 'https:') ? location.origin + '/' : 'https://qmanning.com';
+// with nothing configured and no history, the first thing on stage is the bundled how-to page
+const DEFAULT_HOME = (location.protocol === 'http:' || location.protocol === 'https:') ? location.origin + PT_BASE + 'welcome.html' : 'https://qmanning.com';
 const SIZE_KEY = 'pt:size', HISTORY_KEY = 'pt:history', HISTORY_MAX = 5, THEME_KEY = 'pt:theme';
 
 const ICONS = {
@@ -68,6 +69,7 @@ const ICONS = {
   grip: svg('<circle cx="12" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="19" r="1"/><circle cx="5" cy="19" r="1"/>'),
   grid3: svg('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'),
   diagonal: svg('<path d="M3 21L21 3M3 13L13 3M11 21L21 11M19 21L21 19M3 5L4.5 3.5"/>'),
+  keyboard: svg('<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>'),
   rotateCcw: svg('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'),
   upload: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>'),
   copy: svg('<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'),
@@ -247,12 +249,13 @@ function buildDimPop() {
 }
 function divider() { const d = document.createElement('div'); d.className = 'pt-dim-div'; return d; }
 // popovers are body-level (see index.html); pin one under its trigger, kept on screen
-function anchorPop(pop, anchor, { align = 'left', width = null } = {}) {
+function anchorPop(pop, anchor, { align = 'left', width = null, above = false } = {}) {
   const r = anchor.getBoundingClientRect();
   if (width) pop.style.width = width + 'px';
-  pop.style.top = (r.bottom + 8) + 'px';
-  const pw = pop.offsetWidth;
-  pop.style.left = Math.max(8, Math.min(align === 'right' ? r.right - pw : r.left, window.innerWidth - pw - 8)) + 'px';
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  pop.style.top = (above ? Math.max(8, r.top - 8 - ph) : r.bottom + 8) + 'px';
+  const x = align === 'right' ? r.right - pw : align === 'center' ? r.left + r.width / 2 - pw / 2 : r.left;
+  pop.style.left = Math.max(8, Math.min(x, window.innerWidth - pw - 8)) + 'px';
 }
 function openDim() { syncDimActive(); showPop(el.dimPop); anchorPop(el.dimPop, el.dimTrigger); el.dimVal.setAttribute('aria-expanded', 'true'); }
 function closeDim() { hidePop(el.dimPop); el.dimVal.setAttribute('aria-expanded', 'false'); }
@@ -1116,6 +1119,29 @@ function openCtx(x, y) {
 function closeCtx() { hidePop(el.ctx, { attr: true }); }
 
 function toggleInspectShortcut() { if (!el.inspect.disabled) setInspect(state.mode !== 'inspect'); }
+const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
+const MOD = IS_MAC ? '⌘' : 'Ctrl';
+const SHORTCUTS = [
+  [[MOD, 'K'], 'Search a page or paste a URL'],
+  [['⇧', MOD, 'I'], 'Toggle Inspect (rulers come with it)'],
+  [['Shift'], 'Hold to peek at hover boxes and rulers'],
+  [['Click'], 'Select an element (in Inspect)'],
+  [['⇧', MOD, 'Click'], 'Add / remove from a multi-selection'],
+  [['Shift', 'Drag'], 'Select an area'],
+  [['Esc'], 'Deselect · close menus'],
+  [[MOD, '↩'], 'Save the note you\'re writing'],
+  [['Drag'], 'Pull a guide out of a ruler (drag it back to remove)'],
+  [['⌫'], 'Delete the selected guide'],
+  [['Right-click'], 'Background, colors & appearance'],
+  [['?'], 'This list'],
+];
+function buildKeysList() {
+  const dl = $('pt-keys-list'); dl.innerHTML = '';
+  SHORTCUTS.forEach(([keys, what]) => { const dt = document.createElement('dt'); keys.forEach((k) => { const kb = document.createElement('kbd'); kb.className = 'pt-key'; kb.textContent = k; dt.appendChild(kb); }); const dd = document.createElement('dd'); dd.textContent = what; dl.appendChild(dt); dl.appendChild(dd); });
+}
+function toggleKeys() { const pop = $('pt-keys-pop'); if (pop.classList.contains('pt-open') && !pop.classList.contains('pt-closing')) hidePop(pop); else { showPop(pop); anchorPop(pop, $('pt-keys-btn'), { align: 'center', above: true }); } }
+function focusSearch() { el.omni.focus(); el.omni.select(); renderResults(el.omni.value); }
+function isSearchShortcut(e) { return (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key || '').toLowerCase() === 'k'; }
 function isInspectShortcut(e) { return (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key || '').toLowerCase() === 'i'; }
 
 function bindRulersAndBg() {
@@ -1125,9 +1151,11 @@ function bindRulersAndBg() {
   window.addEventListener('blur', () => setPeek(false));
   document.addEventListener('keydown', (e) => {
     if (isInspectShortcut(e)) { e.preventDefault(); toggleInspectShortcut(); return; }   // ⇧⌘I
+    if (isSearchShortcut(e)) { e.preventDefault(); focusSearch(); return; }              // ⌘K
     if (e.key === 'Shift' && !e.repeat) setPeek(true);
     const tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+    if (e.key === '?') { e.preventDefault(); toggleKeys(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedGuide) { e.preventDefault(); deleteGuide(state.selectedGuide); }
     else if (e.key === 'Escape') { selectGuide(null); closeCtx(); if (state.selected) hideSelbox(); }   // Esc also deselects (no × in the design)
   });
@@ -1360,6 +1388,7 @@ function bind() {
   el.inspect.innerHTML = ICONS.crosshair; el.shot.innerHTML = ICONS.camera;
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
   el.apReset.innerHTML = ICONS.rotateCcw;
+  $('pt-keys-btn').innerHTML = ICONS.keyboard; buildKeysList();
   el.addNote.innerHTML = ICONS.notebookPen; el.rulerBtn.innerHTML = ICONS.ruler;
   updateThemeIcon();
   bindTips();
@@ -1389,12 +1418,14 @@ function bind() {
     const t = e.target;
     if (!el.omniWrap.contains(t) && !el.results.contains(t)) hidePop(el.results);
     if (!el.menu.contains(t) && !el.menuPop.contains(t)) hidePop(el.menuPop);
+    if (!$('pt-keys-btn').contains(t) && !$('pt-keys-pop').contains(t)) hidePop($('pt-keys-pop'));
     if (!el.dim.contains(t) && !el.dimPop.contains(t)) closeDim();
   });
   window.addEventListener('resize', () => { hidePop(el.results); hidePop(el.menuPop); closeDim(); });
 
   el.inspect.addEventListener('click', () => setInspect(state.mode !== 'inspect'));
   el.shot.addEventListener('click', screenshot);
+  $('pt-keys-btn').addEventListener('click', toggleKeys);
   el.menuBtn.addEventListener('click', () => { if (state.notesEmpty) { el.importInput.click(); return; } if (el.menuPop.classList.contains('pt-open') && !el.menuPop.classList.contains('pt-closing')) hidePop(el.menuPop); else { showPop(el.menuPop); anchorPop(el.menuPop, el.menuBtn, { align: 'right' }); } });
   el.copyAllBtn.addEventListener('click', () => { const text = allNotesText(); if (text) copyText(text); else toast('No notes on this page'); hidePop(el.menuPop); });
   el.exportBtn.addEventListener('click', () => { exportNotes(); hidePop(el.menuPop); });
@@ -1422,6 +1453,7 @@ function bind() {
     else if (d.type === 'cleared') { if (state.selected) hideSelbox(); }
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
+    else if (d.type === 'focusSearch') focusSearch();               // ⌘K pressed while the frame had focus
     else if (d.type === 'peek') setPeek(d.on);                        // Shift held/released while the frame had focus
     else if (d.type === 'pinClicked') openModal(d.id, { reveal: true });
   });

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Welcome to Infospector</title>
+<meta name="robots" content="noindex" />
+<style>
+  :root { color-scheme: light dark; --ink: #14171d; --dim: #5b6270; --ground: #f5f6f8; --card: #fff; --line: rgba(0,0,0,.1); --accent: #4f8cff; --yellow: #ffd83d; --purple: #a259ff; --green: #46c17b; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #eef0f5; --dim: #a7adba; --ground: #0f1116; --card: #171a21; --line: rgba(255,255,255,.1); } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 28px 80px; }
+  h1 { font-size: 34px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .lede { font-size: 17px; color: var(--dim); margin: 0 0 36px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin: 40px 0 12px; }
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; gap: 12px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  ol.steps li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; display: grid; place-items: center; }
+  ol.steps b { display: block; margin-bottom: 2px; }
+  ol.steps p { margin: 0; color: var(--dim); }
+  kbd { display: inline-block; min-width: 20px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); background: color-mix(in srgb, var(--ink) 8%, transparent); font: 600 12px inherit; }
+  .try { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card { padding: 16px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
+  .card h3 { margin: 0 0 4px; font-size: 15px; }
+  .card p { margin: 0; color: var(--dim); font-size: 13.5px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .chip { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #111; }
+  .btns { display: flex; gap: 10px; margin-top: 14px; }
+  button { font: inherit; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  footer { margin-top: 48px; color: var(--dim); font-size: 13px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Welcome to Infospector</h1>
+  <p class="lede">You're looking at a page inside the <em>stage</em>. Load one of your own pages, click things, leave notes an assistant can act on. Here's the whole workflow.</p>
+
+  <ol class="steps">
+    <li><div><b>Load a page</b><p>Press <kbd>⌘K</kbd> (or click the search box), pick a page, or paste any URL from your site. Pages from your sitemap and links it has seen appear automatically.</p></div></li>
+    <li><div><b>Pick a size</b><p>The size button (top-left) lists phones, tablets and desktops; choose <em>Custom</em> to type one, or drag a corner of the stage. An orange ring means the stage is scaled to fit — the percentage says how much.</p></div></li>
+    <li><div><b>Turn on Inspect</b><p>Press <kbd>⇧⌘I</kbd> or the crosshair button. Clicks on the page are swallowed; hover shows an element's size, name and selector; rulers appear (drag guides out of them). Hold <kbd>Shift</kbd> any time to peek.</p></div></li>
+    <li><div><b>Leave a note</b><p>Click an element, then <em>Add note</em>. Notes live in draggable cards with a marker pinned to the element. <kbd>Shift</kbd>+drag selects an area; <kbd>⇧⌘</kbd>+click builds a multi-selection.</p></div></li>
+    <li><div><b>Hand it to an assistant</b><p>Every note carries a unique selector, the component chain and box metrics. The notes button (top-right) copies them all as text; with the file bridge running they land in a JSON file an agent can read and mark as done.</p></div></li>
+  </ol>
+
+  <h2>Try it on these</h2>
+  <div class="try">
+    <div class="card"><h3>A card</h3><p>Turn on Inspect and click me. You'll see my selector and size.</p></div>
+    <div class="card"><h3>Another card</h3><p>Shift+drag a box around all three of us to select an area.</p></div>
+    <div class="card"><h3>Third card</h3><p>⇧⌘-click me and the first card for a multi-selection.</p></div>
+  </div>
+  <div class="chips"><span class="chip" style="background: var(--yellow)">open</span><span class="chip" style="background: var(--purple); color: #fff">noted</span><span class="chip" style="background: var(--green)">done</span><span style="align-self: center; color: var(--dim); font-size: 13px">← a note's marker changes color as an assistant works</span></div>
+  <div class="btns"><button class="primary">A primary button</button><button>A secondary button</button></div>
+
+  <h2>Make it yours</h2>
+  <p>Right-click the background outside the stage for patterns, colors and the glass look. Add <code>?setup</code> to the URL to redo the first-run setup, <code>?doctor</code> to check the install. The keyboard button under the stage lists every shortcut.</p>
+
+  <footer>Infospector is MIT-licensed. Nothing here phones home; notes stay in your browser unless you point them at the file bridge.</footer>
+</main>
+</body>
+</html>
