@@ -424,7 +424,9 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
    the per-element defaults above.
    ====================================================================================== */
 :root {
-  --c-glass: #bbbbbc; --c-light: #fff; --c-dark: #000;
+  /* default tint is per theme: dark glass in the dark, the pen's #bbbbbc in the light
+     (a picked Tint color overrides both — and is re-lit for the other theme by JS) */
+  --c-glass: #2a2d36; --c-light: #fff; --c-dark: #000;
   --glass-reflex-dark: 2; --glass-reflex-light: 0.3;   /* dark theme */
   --saturation: 150%;
   --glass-tint: 14%; --glass-tint-2: 36%;
@@ -437,6 +439,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
   --pt-spring: linear(0 0%, 0.6091 3.69%, 1.0259 7.24%, 1.1733 9.05%, 1.283 10.92%, 1.3562 12.87%, 1.3948 14.95%, 1.4014 16.03%, 1.3999 17.16%, 1.3731 19.64%, 1.3202 22.27%, 1.1394 29.39%, 1.0582 33.17%, 0.9943 37.45%, 0.9734 39.64%, 0.9593 41.92%, 0.9505 45.08%, 0.9517 48.7%, 0.9924 63.02%, 1.0046 71.2%, 1.0061 78.24%, 1 100%);
 }
 :root[data-pt-theme="light"] {
+  --c-glass: #bbbbbc;
   --glass-reflex-dark: 1; --glass-reflex-light: 1;
   --pt-glass:   color-mix(in srgb, var(--c-glass) var(--glass-tint), transparent);
   --pt-glass-2: color-mix(in srgb, var(--c-glass) var(--glass-tint-2), transparent);
