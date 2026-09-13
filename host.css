@@ -445,6 +445,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-ctx-color input[type="color"] { width: 26px; height: 26px; padding: 0; border: 1px solid var(--pt-glass-brd-strong); border-radius: 7px; background: none; cursor: pointer; }
 .pt-ctx-color input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
 .pt-ctx-color input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+.pt-start-select { flex: 1; min-width: 0; height: 26px; }
 .pt-ctx-color input[type="text"] { flex: 1; min-width: 0; height: 26px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--pt-glass-brd-strong); background: color-mix(in srgb, var(--pt-text) 9%, transparent); color: var(--pt-text); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; outline: none; }
 .pt-ctx-color input[type="text"]:focus { border-color: var(--pt-accent); }
 .pt-ctx-color input[type="text"].pt-invalid { border-color: var(--pt-danger); }
