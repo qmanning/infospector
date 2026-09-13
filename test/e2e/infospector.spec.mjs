@@ -65,7 +65,7 @@ test('Ruler wrap snaps four guides to the element; the wrap button is not a togg
   const st = await stageInfo(page);
   await page.click('#pt-ruler');
   await expect(page.locator('#pt-guides .pt-guide')).toHaveCount(4);
-  const labels = (await page.locator('#pt-guides .pt-guide-label').allTextContents()).map(Number).sort((a, b) => a - b);
+  const labels = (await page.locator('#pt-guides .pt-guide-label').allTextContents()).map((t) => Number(t.replace(/^[XY]:\s*/, ''))).sort((a, b) => a - b);
   const tl = logical(st, box.x, box.y), br = logical(st, box.x + box.width, box.y + box.height);
   const want = [tl.x, br.x, tl.y, br.y].sort((a, b) => a - b);
   labels.forEach((l, i) => expect(Math.abs(l - want[i])).toBeLessThanOrEqual(1));
@@ -114,7 +114,7 @@ test('⌘-hover between two guides reads the distance; clicking it makes a guide
   await page.keyboard.down(MOD);
   await page.mouse.move(card.x + 20, card.y + card.height / 2, { steps: 3 });
   const tag = page.locator('#pt-gaps .pt-gap').first();
-  await expect(tag).toHaveText(`${h}px`);
+  await expect(tag).toHaveText(`Y: ${h}px`);
   await tag.click();
   await page.keyboard.up(MOD);
   await expect(page.locator('#pt-guides .pt-guide')).toHaveCount(5);
