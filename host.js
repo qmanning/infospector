@@ -689,7 +689,7 @@ function renderNote(t, note) {
   const doCancel = () => { if (note._draft) { removeNote(t, note); return; } delete note._pending; ta.value = note.text; paintDirty(); };
   const saveBtn = btn('Save', 'pt-primary pt-edit-only', doSave);
   const cancelBtn = btn('Cancel', 'pt-edit-only', doCancel);
-  actions.appendChild(saveBtn); actions.appendChild(cancelBtn);
+  actions.appendChild(cancelBtn); actions.appendChild(saveBtn);   // secondary left, primary right — site-wide rule
 
   const chip = document.createElement('span'); chip.className = 'pt-state-chip pt-saved-only pt-state-' + note.state; chip.textContent = note.state; chip.dataset.tip = 'Set by the assistant as it works (open → noted → done)';
   actions.appendChild(chip);

@@ -160,9 +160,9 @@
     <label class="pt-ctx-range" data-tip="A solid layer of the tint color under the glass — text flips dark/light to stay legible"><span>Backing</span><input type="range" id="pt-ap-backing" min="0" max="100" step="5" /><output id="pt-ap-backing-val"></output></label>
     <label class="pt-ctx-color"><span>Tint color</span><input type="color" id="pt-ap-color" aria-label="Glass tint color" /><input type="text" id="pt-ap-color-txt" placeholder="#hex · hsl() · hsb()" spellcheck="false" aria-label="Glass tint color value" /></label>
     <div class="pt-ctx-actions">
-      <button class="pt-mini pt-primary" id="pt-ap-save" data-tip="Save this look as your defaults (this browser)">Save</button>
-      <button class="pt-mini" id="pt-ap-copy" data-tip="Copy a config.js snippet of this look">Copy config</button>
       <button class="pt-mini pt-icon-btn" id="pt-ap-reset" aria-label="Reset to Default" data-tip="Reset to Default"></button>
+      <button class="pt-mini" id="pt-ap-copy" data-tip="Copy a config.js snippet of this look">Copy config</button>
+      <button class="pt-mini pt-primary" id="pt-ap-save" data-tip="Save this look as your defaults (this browser)">Save</button>
     </div>
   </div>
 
@@ -171,7 +171,7 @@
   <div id="pt-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="pt-confirm-msg">
     <div class="pt-confirm-card">
       <p id="pt-confirm-msg"></p>
-      <div class="pt-ctx-actions"><button class="pt-mini pt-danger" id="pt-confirm-ok">Delete</button><button class="pt-mini" id="pt-confirm-cancel">Cancel</button></div>
+      <div class="pt-ctx-actions"><button class="pt-mini" id="pt-confirm-cancel">Cancel</button><button class="pt-mini pt-danger" id="pt-confirm-ok">Delete</button></div>
     </div>
   </div>
   <!-- first-run setup (also ?setup) and the self-check (?doctor / __infospector.doctor()) -->
@@ -188,9 +188,9 @@
       <label class="pt-field pt-field-bridge" id="pt-setup-bridge-row" hidden><span>Bridge URL</span><input type="text" id="pt-setup-bridge" spellcheck="false" placeholder="http://localhost:7331" /></label>
       <p class="pt-sheet-note" id="pt-setup-bridge-note" hidden>Run <code>node infospector/server.mjs</code> in your project, then notes persist to <code>infospector-notes.json</code> where an agent can read them.</p>
       <div class="pt-ctx-actions">
-        <button class="pt-mini pt-primary" id="pt-setup-start">Start</button>
-        <button class="pt-mini" id="pt-setup-copy" data-tip="Copy a config.js snippet so every browser starts this way">Copy config</button>
         <button class="pt-mini" id="pt-setup-skip">Skip</button>
+        <button class="pt-mini" id="pt-setup-copy" data-tip="Copy a config.js snippet so every browser starts this way">Copy config</button>
+        <button class="pt-mini pt-primary" id="pt-setup-start">Start</button>
       </div>
     </div>
   </div>
@@ -198,7 +198,7 @@
     <div class="pt-sheet-card">
       <h2 id="pt-doctor-title">Setup check</h2>
       <ul class="pt-doc-list" id="pt-doctor-list"></ul>
-      <div class="pt-ctx-actions"><button class="pt-mini pt-primary" id="pt-doctor-again">Run again</button><button class="pt-mini" id="pt-doctor-copy">Copy report</button><button class="pt-mini" id="pt-doctor-close">Close</button></div>
+      <div class="pt-ctx-actions"><button class="pt-mini" id="pt-doctor-close">Close</button><button class="pt-mini" id="pt-doctor-copy">Copy report</button><button class="pt-mini pt-primary" id="pt-doctor-again">Run again</button></div>
     </div>
   </div>
   <div id="pt-toast"></div>
