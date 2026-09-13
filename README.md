@@ -64,7 +64,10 @@ differently from your pages.
 
 Open the folder's `index.html` in the browser (e.g. `http://localhost:3000/labs/infospector/`).
 A small **Set up** card asks for your default page, theme, accent, and where notes live — or
-**Skip**. Reopen it any time with `?setup`; get a full self-check with `?doctor`.
+**Skip**. It appears only on a true first run (a browser with no Infospector state and no
+`config.js` settings); reopen it any time with `?setup`, and get a full self-check with `?doctor`.
+Tip: **Copy config** on that card and paste into `config.js` — then every browser and every
+port starts set up.
 
 **3. Check the frame headers** (only if the stage says "This page can't be framed")
 
