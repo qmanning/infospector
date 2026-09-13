@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Infospector</title>
+  <meta name="robots" content="noindex" />
+  <script>
+    // no-flash theme: apply saved choice before first paint (default dark)
+    try { var t = localStorage.getItem('pt:theme'); document.documentElement.setAttribute('data-pt-theme', t === 'light' ? 'light' : 'dark'); }
+    catch (e) { document.documentElement.setAttribute('data-pt-theme', 'dark'); }
+  </script>
+  <link rel="stylesheet" href="./host.css" />
+</head>
+<body>
+  <!-- floating frosted toolbar, centered above the stage -->
+  <div id="pt-bar">
+    <div class="pt-dim" id="pt-dim">
+      <div class="pt-dim-trigger" id="pt-dim-trigger">
+        <button class="pt-dim-val" id="pt-dim-val" aria-haspopup="true" aria-expanded="false" data-tip="Stage size">1280 × 960</button>
+        <span class="pt-dim-inputs" id="pt-dim-inputs">
+          <input id="pt-dim-w" type="number" min="200" max="7680" aria-label="Width" />
+          <span class="pt-times">×</span>
+          <input id="pt-dim-h" type="number" min="200" max="7680" aria-label="Height" />
+        </span>
+        <button class="pt-chev" id="pt-dim-chev" aria-label="Choose a size" aria-haspopup="true" data-tip="Choose a size">▾</button>
+      </div>
+    </div>
+
+    <div class="pt-omni" id="pt-omni">
+      <span class="pt-omni-icon" id="pt-omni-icon"></span>
+      <input id="pt-omni-input" type="text" placeholder="Search a page or paste a URL…"
+             autocomplete="off" spellcheck="false" aria-label="Search a page or paste a URL" />
+      <button class="pt-omni-clear" id="pt-omni-clear" aria-label="Clear" data-tip="Clear"></button>
+    </div>
+
+    <button class="pt-rbtn" id="pt-inspect" aria-label="Inspect" aria-pressed="false" data-tip="Inspect · ⇧⌘I"></button>
+    <button class="pt-rbtn" id="pt-shot" aria-label="Screenshot" data-tip="Screenshot"></button>
+    <button class="pt-rbtn" id="pt-theme" aria-label="Toggle theme" data-tip="Switch theme"></button>
+
+    <div class="pt-menu" id="pt-menu" hidden>
+      <button class="pt-rbtn pt-badge-btn" id="pt-menu-btn" aria-label="Notes" data-tip="Notes on this page · export, import, clear"></button>
+    </div>
+  </div>
+
+  <div id="pt-tip" role="tooltip" hidden></div>
+
+  <!-- popovers live outside the toolbar: a backdrop-filter only blurs what's behind its nearest
+       backdrop-filtering ancestor, so nested inside the (blurred) bar they could never blur the stage -->
+  <div class="pt-dim-pop" id="pt-dim-pop" role="menu"></div>
+  <div class="pt-omni-results" id="pt-omni-results" role="listbox"></div>
+  <div class="pt-menu-pop" id="pt-menu-pop" role="menu">
+    <button class="pt-menu-item" id="pt-copy-all" role="menuitem">Copy all notes</button>
+    <div class="pt-menu-div"></div>
+    <button class="pt-menu-item" id="pt-export" role="menuitem">Export notes</button>
+    <button class="pt-menu-item" id="pt-import" role="menuitem">Import notes</button>
+    <div class="pt-menu-div"></div>
+    <button class="pt-menu-item pt-danger" id="pt-clear" role="menuitem">Clear all notes</button>
+  </div>
+
+  <main id="pt-stagewrap">
+    <div id="pt-stage" style="width: 1280px; height: 960px;">
+      <div id="pt-stage-viewport">
+        <iframe id="pt-frame" title="Preview stage"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-pointer-lock"></iframe>
+      </div>
+
+      <div class="pt-overlay pt-show" id="pt-overlay-empty">
+        <div>
+          <h2>Loading…</h2>
+          <p>Search for one of your pages, or paste a full <code>URL</code> above. Same-origin pages
+             get the full inspector + notes; external URLs are best-effort (many sites block framing).</p>
+        </div>
+      </div>
+      <div class="pt-overlay" id="pt-overlay-blocked">
+        <div>
+          <h2>This page can't be framed</h2>
+          <p>The site refused to load in the stage (its <code>X-Frame-Options</code> / CSP blocks
+             embedding), or it's cross-origin. Try one of your own pages for full inspection.</p>
+        </div>
+      </div>
+
+      <!-- rulers (top + left) and the guides pulled out of them -->
+      <div class="pt-rulers" id="pt-rulers">
+        <canvas class="pt-ruler pt-ruler-top" id="pt-ruler-top" aria-label="Horizontal ruler"></canvas>
+        <canvas class="pt-ruler pt-ruler-left" id="pt-ruler-left" aria-label="Vertical ruler"></canvas>
+        <div class="pt-ruler-corner" id="pt-ruler-corner"></div>
+      </div>
+      <div class="pt-guides" id="pt-guides"></div>
+
+      <!-- invisible edge strips: hovering within ~5px of the border reveals the handles -->
+      <div class="pt-edge pt-e-t"></div>
+      <div class="pt-edge pt-e-r"></div>
+      <div class="pt-edge pt-e-b"></div>
+      <div class="pt-edge pt-e-l"></div>
+      <div class="pt-handle pt-h-nw" data-corner="nw"></div>
+      <div class="pt-handle pt-h-ne" data-corner="ne"></div>
+      <div class="pt-handle pt-h-sw" data-corner="sw"></div>
+      <div class="pt-handle pt-h-se" data-corner="se"></div>
+    </div>
+  </main>
+
+  <!-- "Item Info" (from the Figma spec): text block | 2px grip | icon stack -->
+  <div id="pt-selbox" hidden>
+    <div class="pt-sb-inner">
+      <div class="pt-sb-id"><span class="pt-sb-name" id="pt-sb-name"></span><span class="pt-sb-sel" id="pt-sb-sel"></span></div>
+      <div class="pt-sb-info" id="pt-sb-info"></div>
+    </div>
+    <div class="pt-sb-grip"></div>
+    <div class="pt-sb-btns">
+      <button id="pt-add-note" aria-label="Add note" data-tip="Add a note"></button>
+      <button id="pt-ruler" aria-label="Ruler wrap" data-tip="Ruler wrap · show its dimensions"></button>
+    </div>
+  </div>
+
+  <!-- right-click menu for the background -->
+  <div id="pt-ctx" hidden>
+    <div class="pt-ctx-title">Background</div>
+    <div class="pt-seg" id="pt-bg-seg" role="radiogroup" aria-label="Background pattern">
+      <span class="pt-seg-ind"></span>
+      <button type="button" role="radio" data-bg="dots" aria-label="Dots" data-tip="Dots"></button>
+      <button type="button" role="radio" data-bg="grid" aria-label="Grid" data-tip="Grid"></button>
+      <button type="button" role="radio" data-bg="lines" aria-label="Diagonal lines" data-tip="Diagonal lines"></button>
+      <button type="button" role="radio" data-bg="none" aria-label="None" data-tip="None"></button>
+    </div>
+    <label class="pt-ctx-range"><span>Opacity</span><input type="range" id="pt-bg-opacity" min="0" max="100" step="5" /><output id="pt-bg-opacity-val">50%</output></label>
+    <div class="pt-menu-div"></div>
+    <div class="pt-ctx-title pt-ctx-title-row"><span>Colors</span>
+      <select class="pt-fmt" id="pt-col-fmt" aria-label="Color format" data-tip="How colors are written in the fields">
+        <option value="hex">HEX</option><option value="rgb">RGB</option><option value="hsl">HSL</option><option value="hsb">HSB</option>
+      </select></div>
+    <label class="pt-ctx-color"><span>Pattern</span><input type="color" id="pt-col-pattern" aria-label="Pattern color" /><input type="text" id="pt-col-pattern-txt" placeholder="#hex · hsl() · hsb()" spellcheck="false" aria-label="Pattern color value" /></label>
+    <label class="pt-ctx-color"><span>Background</span><input type="color" id="pt-col-ground" aria-label="Background color" /><input type="text" id="pt-col-ground-txt" placeholder="#hex · hsl() · hsb()" spellcheck="false" aria-label="Background color value" /></label>
+    <div class="pt-menu-div"></div>
+    <div class="pt-ctx-title">Appearance</div>
+    <label class="pt-ctx-range"><span>Blur</span><input type="range" id="pt-ap-blur" min="0" max="30" step="1" /><output id="pt-ap-blur-val"></output></label>
+    <label class="pt-ctx-range"><span>Saturation</span><input type="range" id="pt-ap-sat" min="100" max="250" step="5" /><output id="pt-ap-sat-val"></output></label>
+    <label class="pt-ctx-range"><span>Highlight</span><input type="range" id="pt-ap-light" min="0" max="2" step="0.1" /><output id="pt-ap-light-val"></output></label>
+    <label class="pt-ctx-range"><span>Shadow</span><input type="range" id="pt-ap-dark" min="0" max="3" step="0.1" /><output id="pt-ap-dark-val"></output></label>
+    <label class="pt-ctx-range"><span>Opacity</span><input type="range" id="pt-ap-tint" min="0" max="100" step="1" /><output id="pt-ap-tint-val"></output></label>
+    <label class="pt-ctx-range" data-tip="A solid layer of the tint color under the glass — text flips dark/light to stay legible"><span>Backing</span><input type="range" id="pt-ap-backing" min="0" max="100" step="5" /><output id="pt-ap-backing-val"></output></label>
+    <label class="pt-ctx-color"><span>Tint color</span><input type="color" id="pt-ap-color" aria-label="Glass tint color" /><input type="text" id="pt-ap-color-txt" placeholder="#hex · hsl() · hsb()" spellcheck="false" aria-label="Glass tint color value" /></label>
+    <button class="pt-ctx-item" id="pt-ap-save">Save as defaults</button>
+    <button class="pt-ctx-item" id="pt-ap-copy">Copy config snippet</button>
+    <button class="pt-ctx-item" id="pt-ap-reset">Reset to defaults</button>
+    <div class="pt-menu-div"></div>
+    <button class="pt-ctx-item" id="pt-import-2">Import notes…</button>
+  </div>
+
+  <div id="pt-modals"></div>
+  <div id="pt-toast"></div>
+  <input type="file" id="pt-import-input" accept="application/json,.json" hidden />
+
+  <script src="./config.js"></script>
+  <script type="module" src="./host.js"></script>
+</body>
+</html>
