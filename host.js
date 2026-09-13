@@ -1125,6 +1125,7 @@ const SHORTCUTS = [
   [[MOD, 'K'], 'Search a page or paste a URL'],
   [['⇧', MOD, 'I'], 'Toggle Inspect (rulers come with it)'],
   [['Shift'], 'Hold to peek at hover boxes and rulers'],
+  [['Shift', 'Click'], 'While peeking: turn Inspect on and select that element'],
   [['Click'], 'Select an element (in Inspect)'],
   [['⇧', MOD, 'Click'], 'Add / remove from a multi-selection'],
   [['Shift', 'Drag'], 'Select an area'],
@@ -1453,6 +1454,7 @@ function bind() {
     else if (d.type === 'cleared') { if (state.selected) hideSelbox(); }
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
+    else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in
     else if (d.type === 'focusSearch') focusSearch();               // ⌘K pressed while the frame had focus
     else if (d.type === 'peek') setPeek(d.on);                        // Shift held/released while the frame had focus
     else if (d.type === 'pinClicked') openModal(d.id, { reveal: true });

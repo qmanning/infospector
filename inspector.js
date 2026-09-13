@@ -177,7 +177,7 @@
   function place(node, r) { node.style.left = r.left + 'px'; node.style.top = r.top + 'px'; node.style.width = r.width + 'px'; node.style.height = r.height + 'px'; }
 
   // peek: Shift held outside inspect mode shows the hover box (clicks stay untouched)
-  var peek = false;
+  var peek = false, pendingSelect = null;   // pendingSelect: element shift-clicked while peeking, selected once inspect lands
   function setPeek(on) { on = !!on; if (peek === on) return; peek = on; if (!on) hl.style.display = 'none'; }
 
   var hoverEl = null;   // the element the info box is currently describing on hover
@@ -195,7 +195,15 @@
   document.addEventListener('mouseleave', function () { if (hoverEl) { hoverEl = null; send('hoverCleared'); } });
 
   function onClick(e) {
-    if (mode !== 'inspect') return;
+    if (mode !== 'inspect') {
+      // shift+click while peeking: lock this element in — turn Inspect on and select it
+      if (peek && e.shiftKey && !isOverlayNode(e.target)) {
+        e.preventDefault(); e.stopPropagation();
+        var pel = deepTarget(e.clientX, e.clientY);
+        if (pel && pel !== document.body && pel !== document.documentElement) { pendingSelect = { el: pel, x: e.clientX, y: e.clientY }; send('inspectOn'); }
+      }
+      return;
+    }
     if (isOverlayNode(e.target)) return;                       // pins handle their own clicks
     e.preventDefault(); e.stopPropagation();                   // never let the page act on a click
     if (suppressClick) { suppressClick = false; return; }      // the click that ends a marquee
@@ -254,6 +262,7 @@
   // ---------- shift+drag marquee → area selection --------------------------
   var marqActive = false, marqStart = null, suppressClick = false, selectedRegion = null;
   function onDown(e) {
+    if (mode !== 'inspect' && peek && e.shiftKey && !isOverlayNode(e.target)) { e.preventDefault(); e.stopPropagation(); return; }   // no text-select / link press under a peek click
     if (mode !== 'inspect' || isOverlayNode(e.target)) return;
     e.preventDefault(); e.stopPropagation();
     if (e.shiftKey && e.button === 0 && !(e.metaKey || e.ctrlKey)) {
@@ -446,7 +455,11 @@
     // only obey our own host: same origin, and it must be the window framing us
     if (e.source !== window.parent || e.origin !== location.origin) return;
     var d = e.data; if (!d || d.__pt !== 1 || d.from !== 'host') return;
-    if (d.type === 'mode') { mode = d.mode; hl.style.display = 'none'; hoverEl = null; marqActive = false; marq.style.display = 'none'; if (mode !== 'inspect') clearSelection(); document.documentElement.classList.toggle('pt-inspecting', mode === 'inspect'); }
+    if (d.type === 'mode') {
+      mode = d.mode; hl.style.display = 'none'; hoverEl = null; marqActive = false; marq.style.display = 'none'; if (mode !== 'inspect') clearSelection(); document.documentElement.classList.toggle('pt-inspecting', mode === 'inspect');
+      if (mode === 'inspect' && pendingSelect) { var ps = pendingSelect; pendingSelect = null; setPeek(false); selectedEls = []; drawMulti(); selectSingle(ps.el, { clientX: ps.x, clientY: ps.y }); }
+      else pendingSelect = null;
+    }
     else if (d.type === 'renderPins') renderPins(d.pins);
     else if (d.type === 'focusPin') focusPin(d.id);
     else if (d.type === 'clearSelection') clearSelection();
