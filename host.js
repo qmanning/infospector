@@ -401,6 +401,7 @@ function placeSelbox() {
   const r = sel.payload.rect || { x: 0, y: 0, width: 0, height: 0 };
   const vr = el.viewport.getBoundingClientRect(), s = state.scale;
   const ex = vr.left + r.x * s, ey = vr.top + r.y * s, ew = r.width * s, eh = r.height * s;
+  el.selbox.style.width = Math.max(320, Math.min(Math.round(ew), window.innerWidth - 16)) + 'px';   // as wide as the element, never narrower than 320
   const bw = el.selbox.offsetWidth, bh = el.selbox.offsetHeight;
   const barBottom = document.getElementById('pt-bar').getBoundingClientRect().bottom;
   const cx = ex + ew / 2;
