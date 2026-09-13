@@ -416,6 +416,30 @@
     if (on) { rulers[selector] = true; measureRuler(selector); }
     else delete rulers[selector];
   }
+  // edges of the visible elements, for guide snapping (viewport px, de-duped, capped)
+  function snapLines() {
+    var xs = {}, ys = {}, count = 0;
+    var all = document.body.querySelectorAll('*');
+    for (var i = 0; i < all.length && count < 600; i++) {
+      var n = all[i]; if (isOverlayNode(n)) continue;
+      var tag = n.tagName; if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'BR' || tag === 'WBR') continue;
+      var r = n.getBoundingClientRect(); if (r.width < 8 || r.height < 8) continue;
+      if (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) continue;
+      var cs = getComputedStyle(n); if (cs.visibility === 'hidden' || cs.opacity === '0') continue;
+      var sel = getSelectors(n)[0] || tag.toLowerCase(); count++;
+      var put = function (map, pos, edge) { var k = Math.round(pos); if (!map[k]) map[k] = { pos: k, selector: sel, edge: edge }; };
+      put(xs, r.left, 'left'); put(xs, r.right, 'right'); put(ys, r.top, 'top'); put(ys, r.bottom, 'bottom');
+    }
+    var toArr = function (m) { return Object.keys(m).map(function (k) { return m[k]; }); };
+    send('snapLines', { x: toArr(xs), y: toArr(ys) });
+  }
+  // ⌘/Ctrl-hover: the host shows the distance between the guides around the pointer
+  var gapRaf = 0;
+  function relayGapHover(e) {
+    var mod = e.metaKey || e.ctrlKey;
+    if (!mod && !gapRaf) return;
+    if (gapRaf) return; gapRaf = requestAnimationFrame(function () { gapRaf = 0; send('gapHover', { x: e.clientX, y: e.clientY, mod: mod }); });
+  }
 
   // ---------- reposition ---------------------------------------------------
 
@@ -443,9 +467,12 @@
     else if (d.type === 'peek') setPeek(d.on);
     else if (d.type === 'reveal') reveal(d.selector, d.on);
     else if (d.type === 'ruler') setRuler(d.selector, d.on);
+    else if (d.type === 'snapLines') snapLines();
   });
 
   document.addEventListener('mousemove', onMove, true);
+  document.addEventListener('mousemove', relayGapHover, true);
+  document.addEventListener('keyup', function (e) { if (e.key === 'Meta' || e.key === 'Control') send('gapHover', { x: -1, y: -1, mod: false }); }, true);
   document.addEventListener('mousemove', onMarqMove, true);
   document.addEventListener('mousedown', onDown, true);
   document.addEventListener('mouseup', onUp, true);

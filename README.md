@@ -9,8 +9,10 @@ control so you know you're zoomed. The stage even wears the right **corners**: f
 rounded-bottom for a browser window, fully rounded for a phone, tablet, or watch.
 
 Turn on **Inspect** (button or **⇧⌘I**) — the page's own clicks are swallowed, the cursor becomes
-a crosshair, and red **rulers** appear along the top and left (drag a guide out of a ruler; click
-a guide and press Delete to remove it). Click any element to **select** it: a bar floats just above
+a crosshair, and **rulers** appear along the top and left. Drag a **guide** out of a ruler: it
+snaps to element edges (and remembers which). Click a guide for its menu — leave a **note on the
+guide**, delete it, or delete all. Hold **⌘/Ctrl** between two guides to read the distance, and
+click that readout to leave a note on that **space**. Click any element to **select** it: a bar floats just above
 it with its size, name, z-index, id and selector, plus buttons to **Add Note** or **Ruler wrap** it —
 four guides snapped to its edges. **Shift+drag** to select an *area* instead — the note records every element
 the box touches, so an assistant knows where to look. Each object can

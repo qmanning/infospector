@@ -70,6 +70,7 @@ const ICONS = {
   grid3: svg('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'),
   diagonal: svg('<path d="M3 21L21 3M3 13L13 3M11 21L21 11M19 21L21 19M3 5L4.5 3.5"/>'),
   keyboard: svg('<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>'),
+  shredder: svg('<path d="M10 22v-5"/><path d="M14 19v-2"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M18 20v-3"/><path d="M2 13h20"/><path d="M20 13V7l-5-5H6a2 2 0 0 0-2 2v9"/><path d="M6 20v-3"/>'),
   rotateCcw: svg('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'),
   upload: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>'),
   copy: svg('<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'),
@@ -94,7 +95,7 @@ const el = {
   stagewrap: $('pt-stagewrap'), stage: $('pt-stage'), viewport: $('pt-stage-viewport'), frame: $('pt-frame'),
   ovEmpty: $('pt-overlay-empty'), ovBlocked: $('pt-overlay-blocked'),
   selbox: $('pt-selbox'), sbName: $('pt-sb-name'), sbSel: $('pt-sb-sel'), sbInfo: $('pt-sb-info'), addNote: $('pt-add-note'), rulerBtn: $('pt-ruler'),
-  rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
+  gaps: $('pt-gaps'), rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
   colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), colAccent: $('pt-col-accent'), colAccentTxt: $('pt-col-accent-txt'),
   apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'),
@@ -113,7 +114,7 @@ const state = {
   selected: null, selPinned: false, hoverTimer: null,   // info box: transient on hover, pinned by a click
   activeRulers: new Set(), modalZ: 111, modalCount: 0,
   rulers: false, peek: false,                         // peek: Shift held outside inspect mode → boxes + rulers
-  guides: [], selectedGuide: null,                    // guides: [{ id, axis: 'x'|'y', pos }] in logical px
+  guides: [], selectedGuide: null, snap: null,        // guides: [{ id, axis: 'x'|'y', pos, for?, snap? }] in logical px; snap: element edges from the frame
   discovered: {}, sitemap: [],
   bg: { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null, accent: null },  // null = theme default; *Theme = theme the color was picked in
   glass: { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null }   // Appearance; null = recipe default
@@ -390,7 +391,6 @@ function showSelbox(sel, { pin = true } = {}) {
   }
   el.sbInfo.innerHTML = parts.join('');
   el.rulerBtn.disabled = isRegion || isMulti;
-  el.rulerBtn.setAttribute('aria-pressed', String(!isRegion && !isMulti && state.activeRulers.has(sel.anchor.selector)));
   el.selbox.classList.toggle('pt-region', isRegion);
   showPop(el.selbox, { attr: true });
   placeSelbox();
@@ -478,7 +478,8 @@ function renderAll() { pushPins(); renderModals(); updateNotesBadge(); }
 
 // markers show how many notes on that object are still open (✓ once they're all done)
 function pushPins() {
-  postToFrame({ type: 'renderPins', pins: state.targets.map((t) => ({
+  renderGuides();   // guide-note markers live on the guides
+  postToFrame({ type: 'renderPins', pins: state.targets.filter((t) => !(t.anchor && t.anchor.guide)).map((t) => ({
     id: t.id, count: t.notes.length, remaining: t.notes.filter((n) => n.state !== 'done').length, state: aggState(t), anchor: t.anchor
   })) });
 }
@@ -529,11 +530,11 @@ function wrapGuides(selector, rect) {
   }
   saveGuides(); renderGuides();
 }
-function toggleSelectedRuler() {
+// Ruler wrap always (re)snaps four guides to the element; the guides themselves are how you remove them
+function wrapSelected() {
   const sel = state.selected; if (!sel || !sel.anchor.selector) return;
-  const selr = sel.anchor.selector, on = !state.activeRulers.has(selr);
-  setRuler(selr, on); el.rulerBtn.setAttribute('aria-pressed', String(on));
-  const t = findTargetBySelector(selr); if (t) { t.ruler = on; save(); }
+  setRuler(sel.anchor.selector, true);
+  const t = findTargetBySelector(sel.anchor.selector); if (t) { t.ruler = true; save(); }
 }
 
 /* ---------------- draggable modals ----------------------------------- */
@@ -583,10 +584,20 @@ function identityBlock(t, note) {
       `page: ${state.pageKey}`
     ].filter(Boolean).join('\n');
   }
+  if (e.tag === 'guide') {
+    const sn = e.snap;
+    return [
+      note.text ? note.text + '\n' : null,
+      `guide: ${e.axis === 'y' ? 'horizontal' : 'vertical'} at ${e.axis}=${e.pos}px (stage viewport px, stage ${state.w}×${state.h})`,
+      sn && sn.selector ? `snapped to: ${sn.edge} edge of ${sn.selector}` : e.for ? `wrapped around: ${e.for}` : null,
+      `page: ${state.pageKey}`
+    ].filter(Boolean).join('\n');
+  }
   if (e.tag === 'region') {
     const g = e.region || {};
     return [
       note.text ? note.text + '\n' : null,
+      e.gap ? `space: ${e.gap.size}px between ${e.gap.axis === 'y' ? 'horizontal guides y=' : 'vertical guides x='}${e.gap.from} and ${e.gap.to} (measured at ${e.gap.axis === 'y' ? 'x' : 'y'}=${e.gap.at})` : null,
       `area: ${Math.round(g.w)}×${Math.round(g.h)} at x=${Math.round(g.x)}, y=${Math.round(g.y)} (page px)`,
       `touches: ${(e.touching || []).map((x) => `${x.name} <${x.tag}>${x.selector ? ' ' + x.selector : ''}`).join('; ') || '(nothing)'}`,
       `page: ${state.pageKey}`
@@ -643,13 +654,15 @@ function paintModal(node, t) {
   const dot = document.createElement('span'); dot.className = 'pt-dot-state'; dot.style.background = STATE_COLORS[aggState(t)];
   const title = document.createElement('span'); title.className = 'pt-mh-title'; title.textContent = (t.element && t.element.name) || 'element';
   const focusBtn = document.createElement('button'); focusBtn.className = 'pt-mh-btn'; focusBtn.dataset.tip = 'Locate on page'; focusBtn.textContent = '◎';
-  focusBtn.addEventListener('click', () => { setReveal(t.anchor.selector, true); postToFrame({ type: 'focusPin', id: t.id }); });
+  focusBtn.addEventListener('click', () => { if (t.anchor.guide) { selectGuide(t.anchor.guide.id); return; } setReveal(t.anchor.selector, true); postToFrame({ type: 'focusPin', id: t.id }); });
   const closeBtn = document.createElement('button'); closeBtn.className = 'pt-mh-btn'; closeBtn.dataset.tip = 'Close (discards unsaved drafts)'; closeBtn.textContent = '×';
   closeBtn.addEventListener('click', () => closeModal(t.id));
   head.appendChild(dot); head.appendChild(title); head.appendChild(focusBtn); head.appendChild(closeBtn); node.appendChild(head);
 
   const meta = document.createElement('div'); meta.className = 'pt-modal-meta';
-  meta.textContent = t.element && t.element.tag === 'region' ? `touches: ${(t.element.touching || []).map((x) => x.name).join(', ') || '—'}`
+  meta.textContent = t.element && t.element.tag === 'guide' ? (t.element.snap && t.element.snap.selector ? `snapped to ${t.element.snap.edge} of ${t.element.snap.selector}` : 'guide')
+    : t.element && t.element.gap ? `${t.element.gap.size}px between guides ${t.element.gap.from} → ${t.element.gap.to}`
+    : t.element && t.element.tag === 'region' ? `touches: ${(t.element.touching || []).map((x) => x.name).join(', ') || '—'}`
     : t.element && t.element.tag === 'multi' ? (t.element.members || []).map((x) => x.name).join(', ')
     : ((t.element && t.element.selectors && t.element.selectors[0]) || '');
   node.appendChild(meta);
@@ -759,11 +772,20 @@ function drawRulers() {
 function loadGuides() { try { const a = JSON.parse(localStorage.getItem(GUIDES_KEY(state.pageKey)) || '[]'); state.guides = Array.isArray(a) ? a : []; } catch (e) { state.guides = []; } state.selectedGuide = null; renderGuides(); }
 function saveGuides() { try { localStorage.setItem(GUIDES_KEY(state.pageKey), JSON.stringify(state.guides)); } catch (e) { /* ignore */ } }
 
+function findTargetByGuide(id) { return state.targets.find((t) => t.anchor && t.anchor.guide && t.anchor.guide.id === id) || null; }
+function guideName(gd) { return (gd.axis === 'y' ? 'Horizontal' : 'Vertical') + ' guide at ' + (gd.axis === 'y' ? 'y' : 'x') + '=' + Math.round(gd.pos); }
 function renderGuides() {
   el.guides.innerHTML = '';
   state.guides.forEach((gd) => {
     const n = document.createElement('div'); n.className = 'pt-guide pt-' + gd.axis; n.dataset.id = gd.id;
     const label = document.createElement('span'); label.className = 'pt-guide-label'; n.appendChild(label);
+    const t = findTargetByGuide(gd.id);
+    if (t && t.notes.length) {   // note marker on the guide, colored by its least-finished note
+      const pin = document.createElement('span'); pin.className = 'pt-guide-pin'; const c = STATE_COLORS[aggState(t)];
+      pin.style.background = c; pin.style.color = lumOf(c) > 0.5 ? '#111' : '#fff'; pin.textContent = String(t.notes.length); pin.dataset.tip = t.notes.length + (t.notes.length === 1 ? ' note' : ' notes') + ' on this guide';
+      pin.addEventListener('pointerdown', (e) => e.stopPropagation()); pin.addEventListener('click', (e) => { e.stopPropagation(); openModal(t.id, { reveal: false }); });
+      n.appendChild(pin);
+    }
     n.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); selectGuide(gd.id); dragGuide(gd, e, n); });
     el.guides.appendChild(n);
   });
@@ -776,11 +798,91 @@ function positionGuides() {
     const px = Math.round(gd.pos * s);
     if (gd.axis === 'y') n.style.top = px + 'px'; else n.style.left = px + 'px';
     n.classList.toggle('pt-selected', gd.id === state.selectedGuide);
+    n.classList.toggle('pt-snapped', !!gd.snap);
     n.querySelector('.pt-guide-label').textContent = Math.round(gd.pos);
   });
+  placeGbox();
 }
 function selectGuide(id) { state.selectedGuide = id; positionGuides(); }
-function deleteGuide(id) { state.guides = state.guides.filter((g) => g.id !== id); if (state.selectedGuide === id) state.selectedGuide = null; saveGuides(); renderGuides(); }
+// the purple menu next to the selected guide's label
+function placeGbox() {
+  const box = $('pt-gbox'); const gd = state.guides.find((g) => g.id === state.selectedGuide);
+  if (!gd || !state.rulers) { box.hidden = true; return; }
+  box.hidden = false;
+  const vr = el.viewport.getBoundingClientRect(), s = state.scale, bw = box.offsetWidth, bh = box.offsetHeight;
+  let x, y;
+  if (gd.axis === 'y') { x = vr.left + 24; y = vr.top + gd.pos * s + 8; } else { x = vr.left + gd.pos * s + 8; y = vr.top + 24; }
+  x = Math.max(8, Math.min(x, window.innerWidth - bw - 8)); y = Math.max(8, Math.min(y, window.innerHeight - bh - 8));
+  box.style.left = x + 'px'; box.style.top = y + 'px';
+}
+async function deleteGuide(id) {
+  const t = findTargetByGuide(id);
+  if (t && t.notes.filter((x) => !x._draft).length) { const ok = await askConfirm(`Delete this guide and its ${t.notes.length} note${t.notes.length === 1 ? '' : 's'}?`); if (!ok) return; }
+  if (t) { closeModal(t.id); state.targets = state.targets.filter((x) => x.id !== t.id); persist(); }
+  state.guides = state.guides.filter((g) => g.id !== id); if (state.selectedGuide === id) state.selectedGuide = null; saveGuides(); renderGuides();
+}
+async function deleteAllGuides() {
+  if (!state.guides.length) return;
+  const noted = state.targets.filter((t) => t.anchor && t.anchor.guide && t.notes.some((x) => !x._draft));
+  const ok = await askConfirm(noted.length ? `Delete all ${state.guides.length} guides and the notes on ${noted.length} of them?` : `Delete all ${state.guides.length} guides?`);
+  if (!ok) return;
+  noted.forEach((t) => closeModal(t.id));
+  state.targets = state.targets.filter((t) => !(t.anchor && t.anchor.guide)); state.activeRulers.clear(); persist();
+  state.guides = []; state.selectedGuide = null; saveGuides(); renderGuides();
+}
+// ---- notes on a guide, and on the space between two guides ----
+function addNoteToGuide(id) {
+  const gd = state.guides.find((g) => g.id === id); if (!gd) return;
+  let t = findTargetByGuide(id); const now = new Date().toISOString();
+  if (!t) {
+    const element = { tag: 'guide', name: guideName(gd), axis: gd.axis, pos: Math.round(gd.pos), snap: gd.snap || null, for: gd.for || null,
+      rect: gd.axis === 'y' ? { x: 0, y: gd.pos, width: state.w, height: 1 } : { x: gd.pos, y: 0, width: 1, height: state.h }, selectors: [], components: [], attrs: {} };
+    t = { id: uid('t'), createdAt: now, updatedAt: now, anchor: { guide: { id: gd.id, axis: gd.axis, pos: Math.round(gd.pos) } }, element, ruler: false, modal: { x: null, y: null, open: true }, notes: [] };
+    state.targets.push(t);
+  } else t.modal.open = true;
+  t.notes.push({ id: uid('n'), text: '', state: 'open', createdAt: now, updatedAt: now, _draft: true });
+  persist(); openModal(t.id, { reveal: false, focusLast: true });
+}
+function addNoteToGap(gap) {   // gap: { axis, from, to, at, cross? }  (viewport px of the stage)
+  let sx = 0, sy = 0; try { sx = el.frame.contentWindow.scrollX; sy = el.frame.contentWindow.scrollY; } catch (e) { /* view-only */ }
+  const c = gap.cross;
+  const band = gap.axis === 'y'
+    ? { x: c ? c.from : 0, y: gap.from, w: c ? c.to - c.from : state.w, h: gap.to - gap.from }
+    : { x: gap.from, y: c ? c.from : 0, w: gap.to - gap.from, h: c ? c.to - c.from : state.h };
+  const region = { x: Math.round(band.x + sx), y: Math.round(band.y + sy), w: Math.round(band.w), h: Math.round(band.h) };
+  const size = gap.to - gap.from, now = new Date().toISOString();
+  let t = findTargetByRegion(region);
+  if (!t) {
+    const element = { tag: 'region', name: `${size}px space`, region, gap: { axis: gap.axis, from: gap.from, to: gap.to, size, at: gap.at }, touching: [],
+      rect: { x: band.x, y: band.y, width: band.w, height: band.h }, selectors: [], components: [], attrs: {} };
+    t = { id: uid('t'), createdAt: now, updatedAt: now, anchor: { selector: null, region, frac: { fx: 0.5, fy: 0.5 }, rectAtCapture: element.rect }, element, ruler: false, modal: { x: null, y: null, open: true }, notes: [] };
+    state.targets.push(t);
+  } else t.modal.open = true;
+  t.notes.push({ id: uid('n'), text: '', state: 'open', createdAt: now, updatedAt: now, _draft: true });
+  persist(); openModal(t.id, { reveal: false, focusLast: true });
+}
+// ---- ⌘-hover readouts: distance between the guides around the pointer; click to note that space ----
+function showGaps(x, y, mod) {
+  el.gaps.innerHTML = '';
+  if (!mod || x < 0 || !state.rulers) return;
+  const s = state.scale;
+  const pair = (axis, at) => { const ps = state.guides.filter((g) => g.axis === axis).map((g) => g.pos).sort((a, b) => a - b); let from = null, to = null; ps.forEach((p) => { if (p <= at) from = p; if (p >= at && to === null) to = p; }); return from !== null && to !== null && to > from ? { from, to } : null; };
+  const py = pair('y', y), px = pair('x', x);
+  const tag = (axis, pr, cross) => {
+    const size = pr.to - pr.from, mid = (pr.from + pr.to) / 2;
+    const line = document.createElement('div'); line.className = 'pt-gap-line';
+    if (axis === 'y') { line.style.left = Math.round(x * s) + 'px'; line.style.top = Math.round(pr.from * s) + 'px'; line.style.width = '1px'; line.style.height = Math.round(size * s) + 'px'; }
+    else { line.style.top = Math.round(y * s) + 'px'; line.style.left = Math.round(pr.from * s) + 'px'; line.style.height = '1px'; line.style.width = Math.round(size * s) + 'px'; }
+    const t = document.createElement('button'); t.className = 'pt-gap'; t.textContent = size + 'px'; t.dataset.tip = 'Leave a note on this space';
+    t.style.left = Math.round((axis === 'y' ? x : mid) * s) + 'px'; t.style.top = Math.round((axis === 'y' ? mid : y) * s) + 'px';
+    const gap = { axis, from: pr.from, to: pr.to, at: Math.round(axis === 'y' ? x : y), cross };
+    t.addEventListener('pointerdown', (e) => e.stopPropagation());
+    t.addEventListener('click', (e) => { e.stopPropagation(); addNoteToGap(gap); el.gaps.innerHTML = ''; });
+    el.gaps.appendChild(line); el.gaps.appendChild(t);
+  };
+  if (py) tag('y', py, px);
+  if (px) tag('x', px, py);
+}
 
 // pointer → logical stage coordinate along the guide's axis
 function guidePos(axis, e) {
@@ -792,7 +894,17 @@ function dragGuide(gd, e, node) {
   const capture = node || el.stage;
   try { capture.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   const limit = gd.axis === 'y' ? state.h : state.w;
-  const move = (ev) => { gd.pos = Math.min(limit, Math.round(guidePos(gd.axis, ev))); positionGuides(); };
+  postToFrame({ type: 'snapLines' });   // fresh element edges for snapping (the frame answers async)
+  const move = (ev) => {
+    let pos = Math.min(limit, Math.round(guidePos(gd.axis, ev)));
+    // snap to element edges (and other guides) within 6 screen px
+    const tol = 6 / state.scale; let best = null;
+    ((state.snap && state.snap[gd.axis]) || []).forEach((ln) => { const d = Math.abs(ln.pos - pos); if (d <= tol && (!best || d < best.d)) best = { d, pos: ln.pos, snap: { selector: ln.selector, edge: ln.edge } }; });
+    state.guides.forEach((o) => { if (o.id === gd.id || o.axis !== gd.axis) return; const d = Math.abs(o.pos - pos); if (d <= tol && (!best || d < best.d)) best = { d, pos: o.pos, snap: { guide: o.id } }; });
+    if (best) { pos = best.pos; gd.snap = best.snap; } else gd.snap = null;
+    gd.pos = pos; delete gd.for;   // a hand-moved guide no longer belongs to a wrap
+    positionGuides();
+  };
   const up = (ev) => {
     try { capture.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     capture.removeEventListener('pointermove', move); capture.removeEventListener('pointerup', up);
@@ -1149,6 +1261,7 @@ const SHORTCUTS = [
   [[MOD, '↩'], 'Save the note you\'re writing'],
   [['Drag'], 'Pull a guide out of a ruler (drag it back to remove)'],
   [['⌫'], 'Delete the selected guide'],
+  [[MOD, 'Hover'], 'Between two guides: shows the distance — click it to note that space'],
   [['Right-click'], 'Background, colors & appearance'],
   [['?'], 'This list'],
 ];
@@ -1165,7 +1278,7 @@ function bindRulersAndBg() {
   el.rulerTop.addEventListener('pointerdown', (e) => startGuideFromRuler('y', e));
   el.rulerLeft.addEventListener('pointerdown', (e) => startGuideFromRuler('x', e));
   document.addEventListener('keyup', (e) => { if (e.key === 'Shift') setPeek(false); });
-  window.addEventListener('blur', () => setPeek(false));
+  window.addEventListener('blur', () => { setPeek(false); if (state.selectedGuide && document.activeElement === el.frame) selectGuide(null); });   // a click into the page deselects too
   document.addEventListener('keydown', (e) => {
     if (isInspectShortcut(e)) { e.preventDefault(); toggleInspectShortcut(); return; }   // ⇧⌘I
     if (isSearchShortcut(e)) { e.preventDefault(); focusSearch(); return; }              // ⌘K
@@ -1177,7 +1290,7 @@ function bindRulersAndBg() {
     else if (e.key === 'Escape') { selectGuide(null); closeCtx(); if (state.selected) hideSelbox(); }   // Esc also deselects (no × in the design)
   });
   // clicking the empty background deselects; right-clicking it opens the pattern menu
-  el.stagewrap.addEventListener('pointerdown', (e) => { if (e.target === el.stagewrap && e.button === 0) selectGuide(null); });
+  document.addEventListener('pointerdown', (e) => { const t = e.target && e.target.closest ? e.target : document.body; if (state.selectedGuide && !t.closest('.pt-guide, #pt-gbox, #pt-confirm, .pt-modal')) selectGuide(null); }, true);
   el.stagewrap.addEventListener('contextmenu', (e) => { if (e.target !== el.stagewrap) return; e.preventDefault(); openCtx(e.clientX, e.clientY); });
   document.addEventListener('pointerdown', (e) => { if (!el.ctx.hidden && !el.ctx.contains(e.target)) closeCtx(); }, true);
   const segIcons = { dots: ICONS.grip, grid: ICONS.grid3, lines: ICONS.diagonal, none: ICONS.ban };
@@ -1415,6 +1528,7 @@ function bind() {
   el.inspect.innerHTML = ICONS.crosshair; el.shot.innerHTML = ICONS.camera;
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
   el.apReset.innerHTML = ICONS.rotateCcw;
+  $('pt-g-note').innerHTML = ICONS.notebookPen; $('pt-g-del').innerHTML = ICONS.trash; $('pt-g-clear').innerHTML = ICONS.shredder;
   $('pt-keys-btn').innerHTML = ICONS.keyboard; buildKeysList();
   el.addNote.innerHTML = ICONS.notebookPen; el.rulerBtn.innerHTML = ICONS.ruler;
   updateThemeIcon();
@@ -1464,7 +1578,10 @@ function bind() {
   el.selbox.addEventListener('mouseenter', () => clearTimeout(state.hoverTimer));
   el.selbox.addEventListener('mouseleave', () => { if (!state.selPinned) { clearTimeout(state.hoverTimer); state.hoverTimer = setTimeout(() => { if (!state.selPinned) hideSelbox(); }, 350); } });
   el.addNote.addEventListener('click', () => { state.selPinned = true; addNoteToSelected(); });
-  el.rulerBtn.addEventListener('click', toggleSelectedRuler);
+  el.rulerBtn.addEventListener('click', wrapSelected);
+  $('pt-g-note').addEventListener('click', () => { if (state.selectedGuide) addNoteToGuide(state.selectedGuide); });
+  $('pt-g-del').addEventListener('click', () => { if (state.selectedGuide) deleteGuide(state.selectedGuide); });
+  $('pt-g-clear').addEventListener('click', deleteAllGuides);
 
   el.frame.addEventListener('load', onFrameLoad);
   window.addEventListener('resize', () => { if (state.fillMode) { const a = availArea(); setSize(a.w, a.h, { fill: true, animate: false }); } else fit(); });
@@ -1479,6 +1596,8 @@ function bind() {
     else if (d.type === 'hoverCleared') { if (!state.selPinned) { clearTimeout(state.hoverTimer); state.hoverTimer = setTimeout(() => { if (!state.selPinned) hideSelbox(); }, 350); } }
     else if (d.type === 'cleared') { if (state.selected) hideSelbox(); }
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
+    else if (d.type === 'snapLines') state.snap = { x: d.x || [], y: d.y || [] };
+    else if (d.type === 'gapHover') showGaps(d.x, d.y, d.mod);
     else if (d.type === 'rulerRect') { if (state.activeRulers.has(d.selector)) wrapGuides(d.selector, d.rect); }   // element measured (or moved) → snap guides to its edges
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
     else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in
