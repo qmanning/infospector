@@ -206,7 +206,7 @@
     e.preventDefault(); e.stopPropagation();                   // never let the page act on a click
     if (suppressClick) { suppressClick = false; return; }      // the click that ends a marquee
     var el = deepTarget(e.clientX, e.clientY);
-    if (!el || el === document.body || el === document.documentElement) return;
+    if (!el || el === document.body || el === document.documentElement) { if (selectedEl || selectedEls.length || selectedRegion) { clearSelection(); send('cleared'); } return; }   // clicking empty space deselects
     selectedRegion = null; regionSel.style.display = 'none';
     if (e.shiftKey && (e.metaKey || e.ctrlKey)) {   // ⇧⌘-click: toggle this element in a multi-selection
       if (selectedEl && selectedEls.indexOf(selectedEl) === -1) selectedEls.push(selectedEl);

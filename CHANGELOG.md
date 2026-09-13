@@ -5,6 +5,16 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-09-13
+
+### Changed
+- **Esc is a global escape hatch**: one press leaves Inspect and peek, deselects, and closes every open popover, menu, sheet, note, and the size/search dropdowns.
+
+### Fixed
+- The resize outline no longer lingers after a corner drag — it clears on release, on a press anywhere else, and when the window loses focus (and survives a cancelled/interrupted drag).
+- Clicking off a selected element (empty canvas, or anywhere outside it) now deselects it and hides the Item Info box; it used to stick until you pressed Esc.
+- Clicking a guide or dragging one out of a ruler no longer deselects the element (the wrap guides belong to the selection and were vanishing under the click).
+
 ## [0.3.0] — 2026-09-13
 
 ### Added
