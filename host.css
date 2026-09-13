@@ -331,7 +331,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 #pt-selbox {
   position: fixed; left: 0; top: 0; z-index: 115;
   display: flex; align-items: flex-start; gap: 16px;
-  width: 472px; max-width: calc(100vw - 16px);
+  min-width: 320px; max-width: calc(100vw - 16px);   /* JS widens it to the selected element's on-screen width */
   padding: 8px 16px 8px 8px; border-radius: 16px;   /* concentric: 8px inset + 1px border → r7 inner controls */
   transition: left 90ms ease-out, top 90ms ease-out;
   border: 1px solid rgba(162, 217, 255, 0.25);
