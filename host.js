@@ -589,6 +589,7 @@ function identityBlock(t, note) {
     return [
       note.text ? note.text + '\n' : null,
       `guide: ${e.axis === 'y' ? 'horizontal' : 'vertical'} at ${e.axis}=${e.pos}px (stage viewport px, stage ${state.w}×${state.h})`,
+      e.gap ? `measures: ${e.gap.size}px between ${e.gap.axis === 'y' ? 'horizontal guides y=' : 'vertical guides x='}${e.gap.from} and ${e.gap.to}` : null,
       sn && sn.selector ? `snapped to: ${sn.edge} edge of ${sn.selector}` : e.for ? `wrapped around: ${e.for}` : null,
       `page: ${state.pageKey}`
     ].filter(Boolean).join('\n');
@@ -660,8 +661,7 @@ function paintModal(node, t) {
   head.appendChild(dot); head.appendChild(title); head.appendChild(focusBtn); head.appendChild(closeBtn); node.appendChild(head);
 
   const meta = document.createElement('div'); meta.className = 'pt-modal-meta';
-  meta.textContent = t.element && t.element.tag === 'guide' ? (t.element.snap && t.element.snap.selector ? `snapped to ${t.element.snap.edge} of ${t.element.snap.selector}` : 'guide')
-    : t.element && t.element.gap ? `${t.element.gap.size}px between guides ${t.element.gap.from} → ${t.element.gap.to}`
+  meta.textContent = t.element && t.element.tag === 'guide' ? (t.element.gap ? `${t.element.gap.size}px between guides ${t.element.gap.from} → ${t.element.gap.to}` : t.element.snap && t.element.snap.selector ? `snapped to ${t.element.snap.edge} of ${t.element.snap.selector}` : 'guide')
     : t.element && t.element.tag === 'region' ? `touches: ${(t.element.touching || []).map((x) => x.name).join(', ') || '—'}`
     : t.element && t.element.tag === 'multi' ? (t.element.members || []).map((x) => x.name).join(', ')
     : ((t.element && t.element.selectors && t.element.selectors[0]) || '');
@@ -799,7 +799,7 @@ function positionGuides() {
     if (gd.axis === 'y') n.style.top = px + 'px'; else n.style.left = px + 'px';
     n.classList.toggle('pt-selected', gd.id === state.selectedGuide);
     n.classList.toggle('pt-snapped', !!gd.snap);
-    n.querySelector('.pt-guide-label').textContent = Math.round(gd.pos);
+    n.querySelector('.pt-guide-label').textContent = Math.round(gd.pos) + (gd.gap ? ' · ' + gd.gap.size + 'px' : '');
   });
   placeGbox();
 }
@@ -835,7 +835,7 @@ function addNoteToGuide(id) {
   const gd = state.guides.find((g) => g.id === id); if (!gd) return;
   let t = findTargetByGuide(id); const now = new Date().toISOString();
   if (!t) {
-    const element = { tag: 'guide', name: guideName(gd), axis: gd.axis, pos: Math.round(gd.pos), snap: gd.snap || null, for: gd.for || null,
+    const element = { tag: 'guide', name: gd.gap ? `${gd.gap.size}px space` : guideName(gd), axis: gd.axis, pos: Math.round(gd.pos), snap: gd.snap || null, for: gd.for || null, gap: gd.gap || null,
       rect: gd.axis === 'y' ? { x: 0, y: gd.pos, width: state.w, height: 1 } : { x: gd.pos, y: 0, width: 1, height: state.h }, selectors: [], components: [], attrs: {} };
     t = { id: uid('t'), createdAt: now, updatedAt: now, anchor: { guide: { id: gd.id, axis: gd.axis, pos: Math.round(gd.pos) } }, element, ruler: false, modal: { x: null, y: null, open: true }, notes: [] };
     state.targets.push(t);
@@ -843,23 +843,11 @@ function addNoteToGuide(id) {
   t.notes.push({ id: uid('n'), text: '', state: 'open', createdAt: now, updatedAt: now, _draft: true });
   persist(); openModal(t.id, { reveal: false, focusLast: true });
 }
-function addNoteToGap(gap) {   // gap: { axis, from, to, at, cross? }  (viewport px of the stage)
-  let sx = 0, sy = 0; try { sx = el.frame.contentWindow.scrollX; sy = el.frame.contentWindow.scrollY; } catch (e) { /* view-only */ }
-  const c = gap.cross;
-  const band = gap.axis === 'y'
-    ? { x: c ? c.from : 0, y: gap.from, w: c ? c.to - c.from : state.w, h: gap.to - gap.from }
-    : { x: gap.from, y: c ? c.from : 0, w: gap.to - gap.from, h: c ? c.to - c.from : state.h };
-  const region = { x: Math.round(band.x + sx), y: Math.round(band.y + sy), w: Math.round(band.w), h: Math.round(band.h) };
-  const size = gap.to - gap.from, now = new Date().toISOString();
-  let t = findTargetByRegion(region);
-  if (!t) {
-    const element = { tag: 'region', name: `${size}px space`, region, gap: { axis: gap.axis, from: gap.from, to: gap.to, size, at: gap.at }, touching: [],
-      rect: { x: band.x, y: band.y, width: band.w, height: band.h }, selectors: [], components: [], attrs: {} };
-    t = { id: uid('t'), createdAt: now, updatedAt: now, anchor: { selector: null, region, frac: { fx: 0.5, fy: 0.5 }, rectAtCapture: element.rect }, element, ruler: false, modal: { x: null, y: null, open: true }, notes: [] };
-    state.targets.push(t);
-  } else t.modal.open = true;
-  t.notes.push({ id: uid('n'), text: '', state: 'open', createdAt: now, updatedAt: now, _draft: true });
-  persist(); openModal(t.id, { reveal: false, focusLast: true });
+function addNoteToGap(gap) {   // gap: { axis, from, to, at }  — the readout's measuring line becomes a guide that carries the note
+  const cross = gap.axis === 'y' ? 'x' : 'y';
+  const gd = { id: uid('g'), axis: cross, pos: Math.round(gap.at), gap: { axis: gap.axis, from: gap.from, to: gap.to, size: gap.to - gap.from } };
+  state.guides.push(gd); saveGuides(); renderGuides(); selectGuide(gd.id);
+  addNoteToGuide(gd.id);
 }
 // ---- ⌘-hover readouts: distance between the guides around the pointer; click to note that space ----
 function showGaps(x, y, mod) {
@@ -1598,6 +1586,7 @@ function bind() {
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
     else if (d.type === 'snapLines') state.snap = { x: d.x || [], y: d.y || [] };
     else if (d.type === 'gapHover') showGaps(d.x, d.y, d.mod);
+    else if (d.type === 'frameDown') { if (state.selectedGuide) selectGuide(null); }   // a click into the page deselects the guide
     else if (d.type === 'rulerRect') { if (state.activeRulers.has(d.selector)) wrapGuides(d.selector, d.rect); }   // element measured (or moved) → snap guides to its edges
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
     else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in

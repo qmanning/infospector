@@ -259,6 +259,7 @@
   // ---------- shift+drag marquee → area selection --------------------------
   var marqActive = false, marqStart = null, suppressClick = false, selectedRegion = null;
   function onDown(e) {
+    if (!isOverlayNode(e.target)) send('frameDown');   // any press on the page: the host deselects its guide
     if (mode !== 'inspect' && peek && e.shiftKey && !isOverlayNode(e.target)) { e.preventDefault(); e.stopPropagation(); return; }   // no text-select / link press under a peek click
     if (mode !== 'inspect' || isOverlayNode(e.target)) return;
     e.preventDefault(); e.stopPropagation();
