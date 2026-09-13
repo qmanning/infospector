@@ -5,6 +5,12 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+### Added
+- **Shift+drag while peeking** (Inspect off) draws an area selection; Inspect turns on as it lands.
+
+### Fixed
+- Leaving a note (from an element, a guide, or a gap readout) now focuses the textarea so you can type immediately — the modal was being repainted right after opening, detaching the node that had been focused.
+
 ## [0.2.0] — 2026-09-13
 
 ### Added

@@ -174,7 +174,7 @@
   function place(node, r) { node.style.left = r.left + 'px'; node.style.top = r.top + 'px'; node.style.width = r.width + 'px'; node.style.height = r.height + 'px'; }
 
   // peek: Shift held outside inspect mode shows the hover box (clicks stay untouched)
-  var peek = false, pendingSelect = null;   // pendingSelect: element shift-clicked while peeking, selected once inspect lands
+  var peek = false, pendingSelect = null, suppressPeekClick = false;   // suppressPeekClick: the click that ends a peek-marquee isn't a lock-in click   // pendingSelect: element shift-clicked while peeking, selected once inspect lands
   function setPeek(on) { on = !!on; if (peek === on) return; peek = on; if (!on) hl.style.display = 'none'; }
 
   var hoverEl = null;   // the element the info box is currently describing on hover
@@ -196,6 +196,7 @@
       // shift+click while peeking: lock this element in — turn Inspect on and select it
       if (peek && e.shiftKey && !isOverlayNode(e.target)) {
         e.preventDefault(); e.stopPropagation();
+        if (suppressPeekClick) { suppressPeekClick = false; return; }
         var pel = deepTarget(e.clientX, e.clientY);
         if (pel && pel !== document.body && pel !== document.documentElement) { pendingSelect = { el: pel, x: e.clientX, y: e.clientY }; send('inspectOn'); }
       }
@@ -260,7 +261,11 @@
   var marqActive = false, marqStart = null, suppressClick = false, selectedRegion = null;
   function onDown(e) {
     if (!isOverlayNode(e.target)) send('frameDown');   // any press on the page: the host deselects its guide
-    if (mode !== 'inspect' && peek && e.shiftKey && !isOverlayNode(e.target)) { e.preventDefault(); e.stopPropagation(); return; }   // no text-select / link press under a peek click
+    if (mode !== 'inspect' && peek && e.shiftKey && !isOverlayNode(e.target)) {   // peeking: shift+drag draws an area (Inspect turns on when it lands); shift+click locks an element in
+      e.preventDefault(); e.stopPropagation();
+      if (e.button === 0 && !(e.metaKey || e.ctrlKey)) { marqActive = true; marqStart = { x: e.clientX, y: e.clientY }; hl.style.display = 'none'; marq.style.display = 'block'; place(marq, { left: e.clientX, top: e.clientY, width: 0, height: 0 }); }
+      return;
+    }
     if (mode !== 'inspect' || isOverlayNode(e.target)) return;
     e.preventDefault(); e.stopPropagation();
     if (e.shiftKey && e.button === 0 && !(e.metaKey || e.ctrlKey)) {
@@ -275,11 +280,12 @@
   }
   function onMarqMove(e) { if (!marqActive) return; e.preventDefault(); place(marq, marqRect(e)); }
   function onUp(e) {
-    if (mode !== 'inspect' || isOverlayNode(e.target)) return;
+    if ((mode !== 'inspect' && !marqActive) || isOverlayNode(e.target)) return;
     e.preventDefault(); e.stopPropagation();
     if (!marqActive) return;
     marqActive = false; marq.style.display = 'none'; suppressClick = true;
     var r = marqRect(e); if (r.width < 4 || r.height < 4) return;
+    if (mode !== 'inspect') { suppressPeekClick = true; send('inspectOn'); }   // drawn while peeking: bring Inspect on for the selection that follows
     var vr = { x: r.left, y: r.top, left: r.left, top: r.top, right: r.left + r.width, bottom: r.top + r.height, width: r.width, height: r.height };
     selectedEl = null; sel.style.display = 'none';
     selectedRegion = { x: Math.round(r.left + window.scrollX), y: Math.round(r.top + window.scrollY), w: Math.round(r.width), h: Math.round(r.height) };
