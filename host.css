@@ -346,14 +346,17 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 }
 .pt-sb-inner { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; opacity: 0.9; }
 /* name on its own line, selector on the next — a long name must never push the selector out */
-.pt-sb-id { display: flex; flex-direction: column; gap: 1px; min-width: 0; white-space: nowrap; }
+.pt-sb-id { display: flex; flex-direction: column; gap: 4px; min-width: 0; white-space: nowrap; }
 .pt-sb-name { font: 600 13px/16px var(--pt-font); overflow: hidden; text-overflow: ellipsis; }
 .pt-sb-sel { font: 11px/15px ui-monospace, SFMono-Regular, Menlo, monospace; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .pt-sb-info { display: flex; align-items: center; gap: 12px; font: 12px/13px var(--pt-font); opacity: 0.85; white-space: nowrap; overflow: hidden; }
 .pt-sb-info b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pt-sb-info .pt-sb-z { margin-left: auto; }   /* size on the left, z-index on the far right */
+#pt-selbox [data-copy]:not([data-copy=""]) { cursor: copy; border-radius: 4px; transition: background 120ms; }
+#pt-selbox [data-copy]:not([data-copy=""]):hover { background: color-mix(in srgb, var(--pt-text) 12%, transparent); }
 .pt-sb-info .pt-sb-touch { overflow: hidden; text-overflow: ellipsis; }
 .pt-sb-grip { flex: none; width: 2px; align-self: stretch; border-radius: 9999px; background: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.05) 100%); box-shadow: 0.5px 0.5px 0 0 rgba(0, 0, 0, 0.35) inset, -0.5px -0.5px 0.25px 0 rgba(0, 0, 0, 0.25), 0.5px 0.5px 0.25px 0 rgba(255, 255, 255, 0.20); }
-.pt-sb-btns { flex: none; display: flex; flex-direction: column; gap: 8px; opacity: 0.85; transition: opacity .12s; }
+.pt-sb-btns { flex: none; align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; opacity: 0.85; transition: opacity .12s; }   /* note at the top, ruler at the bottom */
 .pt-sb-btns:hover { opacity: 1; }
 .pt-sb-btns button { width: 22px; height: 22px; margin: -3px; padding: 0; border: 0; border-radius: 7px; background: none; color: #fff; cursor: pointer; display: grid; place-items: center; }
 .pt-sb-btns button:hover { background: rgba(255, 255, 255, 0.18); }
