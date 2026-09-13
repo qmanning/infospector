@@ -137,7 +137,7 @@
     '.pt-pin-layer{position:fixed;inset:0;pointer-events:none;z-index:2147482500;}' +
     '.pt-pin{position:absolute;min-width:22px;height:22px;padding:0 5px;margin:-11px 0 0 -11px;border-radius:11px;background:#6b7280;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer;pointer-events:auto;display:grid;place-items:center;border:2px solid #fff;color:#fff;font:700 11px -apple-system,system-ui,sans-serif;}' +
     '.pt-pin.pt-focus{outline:3px solid rgba(79,140,255,.5);outline-offset:2px;}' +
-    '.pt-ruler{position:fixed;pointer-events:none;z-index:2147482200;}' +
+    '.pt-ruler{position:fixed;left:0;top:0;pointer-events:none;z-index:2147482200;}' +   /* left/top: a fixed box with auto offsets sits at its static position (end of body) */
     '.pt-ruler .pt-rl{position:absolute;background:#f0a83c;}' +
     '.pt-ruler .pt-rlabel{position:absolute;background:#f0a83c;color:#1a1200;font:700 10px -apple-system,system-ui,sans-serif;padding:1px 4px;border-radius:3px;white-space:nowrap;transform:translate(-50%,-50%);}' +
     /* shift+drag area selection (marquee while dragging, dotted outline once selected / saved) */
@@ -415,19 +415,16 @@
     if (!el) return null;
     var r = el.getBoundingClientRect();
     var cont = document.createElement('div'); cont.className = 'pt-ruler'; cont.setAttribute('data-pt-overlay', '');
-    var GAP = 8, T = 2;
-    // top horizontal (width)
-    var top = document.createElement('div'); top.className = 'pt-rl';
-    top.style.left = r.left + 'px'; top.style.top = (r.top - GAP) + 'px'; top.style.width = r.width + 'px'; top.style.height = T + 'px';
-    var tickL = document.createElement('div'); tickL.className = 'pt-rl'; tickL.style.left = r.left + 'px'; tickL.style.top = (r.top - GAP - 4) + 'px'; tickL.style.width = T + 'px'; tickL.style.height = '10px';
-    var tickR = document.createElement('div'); tickR.className = 'pt-rl'; tickR.style.left = (r.right - T) + 'px'; tickR.style.top = (r.top - GAP - 4) + 'px'; tickR.style.width = T + 'px'; tickR.style.height = '10px';
-    var wLabel = document.createElement('div'); wLabel.className = 'pt-rlabel'; wLabel.textContent = Math.round(r.width) + 'px'; wLabel.style.left = (r.left + r.width / 2) + 'px'; wLabel.style.top = (r.top - GAP - 8) + 'px';
-    // left vertical (height)
-    var left = document.createElement('div'); left.className = 'pt-rl'; left.style.left = (r.left - GAP) + 'px'; left.style.top = r.top + 'px'; left.style.width = T + 'px'; left.style.height = r.height + 'px';
-    var tickT = document.createElement('div'); tickT.className = 'pt-rl'; tickT.style.left = (r.left - GAP - 4) + 'px'; tickT.style.top = r.top + 'px'; tickT.style.width = '10px'; tickT.style.height = T + 'px';
-    var tickB = document.createElement('div'); tickB.className = 'pt-rl'; tickB.style.left = (r.left - GAP - 4) + 'px'; tickB.style.top = (r.bottom - T) + 'px'; tickB.style.width = '10px'; tickB.style.height = T + 'px';
-    var hLabel = document.createElement('div'); hLabel.className = 'pt-rlabel'; hLabel.textContent = Math.round(r.height) + 'px'; hLabel.style.left = (r.left - GAP - 10) + 'px'; hLabel.style.top = (r.top + r.height / 2) + 'px';
-    [top, tickL, tickR, wLabel, left, tickT, tickB, hLabel].forEach(function (n) { cont.appendChild(n); });
+    var GAP = 8, T = 2, TICK = 10;
+    var bar = function (x, y, w, h) { var d = document.createElement('div'); d.className = 'pt-rl'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.width = w + 'px'; d.style.height = h + 'px'; cont.appendChild(d); };
+    var label = function (text, x, y) { var d = document.createElement('div'); d.className = 'pt-rlabel'; d.textContent = text; d.style.left = x + 'px'; d.style.top = y + 'px'; cont.appendChild(d); };
+    var wTxt = Math.round(r.width) + 'px', hTxt = Math.round(r.height) + 'px';
+    // a dimension line on every edge: width above and below, height left and right, ticks at the ends
+    var yTop = r.top - GAP, yBot = r.bottom + GAP - T, xLeft = r.left - GAP, xRight = r.right + GAP - T;
+    bar(r.left, yTop, r.width, T);  bar(r.left, yTop - 4, T, TICK);  bar(r.right - T, yTop - 4, T, TICK);  label(wTxt, r.left + r.width / 2, yTop - 8);
+    bar(r.left, yBot, r.width, T);  bar(r.left, yBot - 4, T, TICK);  bar(r.right - T, yBot - 4, T, TICK);  label(wTxt, r.left + r.width / 2, yBot + 10);
+    bar(xLeft, r.top, T, r.height); bar(xLeft - 4, r.top, TICK, T);  bar(xLeft - 4, r.bottom - T, TICK, T); label(hTxt, xLeft - 10, r.top + r.height / 2);
+    bar(xRight, r.top, T, r.height); bar(xRight - 4, r.top, TICK, T); bar(xRight - 4, r.bottom - T, TICK, T); label(hTxt, xRight + 12, r.top + r.height / 2);
     document.body.appendChild(cont);
     return { el: el, cont: cont };
   }
