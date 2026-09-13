@@ -144,7 +144,7 @@ test('Clear all notes asks first, then clears', async ({ page }) => {
 test('shortcuts list opens from the button and from "?"', async ({ page }) => {
   await page.click('#pt-keys-btn');
   await expect(page.locator('#pt-keys-pop')).toHaveClass(/pt-open/);
-  await expect(page.locator('#pt-keys-pop dd')).toHaveCount(14);
+  await expect(page.locator('#pt-keys-pop dd')).toHaveCount(15);
   await page.click('#pt-keys-btn');
   await page.keyboard.press('Shift+?');
   await expect(page.locator('#pt-keys-pop')).toHaveClass(/pt-open/);

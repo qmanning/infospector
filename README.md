@@ -28,7 +28,8 @@ nothing is written behind your back. Notes carry a **state** — **open** (yello
 live in the browser or by editing the notes file. A marker is colored by its least-finished note
 and shows a count, so it stays yellow until every note on that object is done.
 
-Also: a **light/dark** toggle, a page **search box with history** (⌘K), screenshots, a keyboard
+Also: a **light/dark** toggle, a page **search box with history** (⌘K), screenshots (⇧⌥⌘Space grabs
+the screen exactly as it is — open menus, tooltips and notes included), a keyboard
 button under the stage that lists every **shortcut** (or press `?`), and it remembers the last
 size you were using. On a fresh install the stage opens a bundled **welcome page** that walks
 through the workflow and gives you things to click.
@@ -229,6 +230,7 @@ Shift+click an element for a copy-ready identity block.
 
 | file | purpose |
 | --- | --- |
+| `CHANGELOG.md` | what changed in each version (PRs add to *Unreleased*; releases are tagged on GitHub) |
 | `INSTALL.md` | step-by-step install checklist written for an AI assistant to follow |
 | `index.html` | the host page (floating toolbar + stage) |
 | `welcome.html` | the how-to page the stage opens on a fresh install |
