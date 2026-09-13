@@ -375,7 +375,8 @@ function showSelbox(sel, { pin = true } = {}) {
   // ID row: name + selector · Info row: size / z-index / id (or what an area touches)
   el.sbName.textContent = isRegion ? 'Area' : (e.name || e.tag);
   el.sbSel.textContent = isRegion ? 'shift-drag selection' : isMulti ? '⇧⌘-click selection' : ((e.selectors && e.selectors[0]) || e.tag);
-  const parts = [`<span><b>${Math.round(r.width)}</b>×<b>${Math.round(r.height)}</b></span>`];
+  el.sbName.dataset.copy = el.sbName.textContent; el.sbSel.dataset.copy = isRegion || isMulti ? '' : el.sbSel.textContent;
+  const parts = [`<span data-copy="${Math.round(r.width)}×${Math.round(r.height)}"><b>${Math.round(r.width)}</b>×<b>${Math.round(r.height)}</b></span>`];
   if (isRegion) {
     const t = e.touching || [];
     parts.push(`<span class="pt-sb-touch">${t.length ? `touches ${t.length}: ${escapeHtml(t.slice(0, 4).map((x) => x.name).join(', '))}${t.length > 4 ? '…' : ''}` : 'touches nothing'}</span>`);
@@ -383,9 +384,9 @@ function showSelbox(sel, { pin = true } = {}) {
     const m = e.members || [];
     parts.push(`<span class="pt-sb-touch">${escapeHtml(m.slice(0, 4).map((x) => x.name).join(', '))}${m.length > 4 ? '…' : ''}</span>`);
   } else {
-    parts.push(`<span>z <b>${escapeHtml(e.zIndex || 'auto')}</b></span>`);
-    if (e.id) parts.push(`<span>#${escapeHtml(e.id)}</span>`);
-    if (e.components && e.components.length) parts.push(`<span class="pt-sb-touch">${escapeHtml(e.components.slice(0, 2).join(' › '))}</span>`);
+    if (e.id) parts.push(`<span data-copy="#${escapeHtml(e.id)}">#${escapeHtml(e.id)}</span>`);
+    if (e.components && e.components.length) parts.push(`<span class="pt-sb-touch" data-copy="${escapeHtml(e.components.join(' › '))}">${escapeHtml(e.components.slice(0, 2).join(' › '))}</span>`);
+    parts.push(`<span class="pt-sb-z" data-copy="z-index: ${escapeHtml(e.zIndex || 'auto')}">z <b>${escapeHtml(e.zIndex || 'auto')}</b></span>`);
   }
   el.sbInfo.innerHTML = parts.join('');
   el.rulerBtn.disabled = isRegion || isMulti;
@@ -546,15 +547,15 @@ function removeNote(t, note) {
 function closeAllModals() { Object.keys(modalEls).forEach((id) => { modalEls[id].remove(); delete modalEls[id]; }); }
 
 // Clipboard API first (needs a secure context + user gesture); fall back to execCommand otherwise
-function copyText(text) {
+function copyText(text, { silent = false } = {}) {
   const legacy = () => {
     const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;';
     document.body.appendChild(ta); ta.select();
     let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
     document.body.removeChild(ta);
-    toast(ok ? 'Copied' : 'Copy failed');
+    if (!silent || !ok) toast(ok ? 'Copied' : 'Copy failed');
   };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('Copied'), legacy);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { if (!silent) toast('Copied'); }, legacy);
   else legacy();
 }
 function identityBlock(t, note) {
@@ -1372,7 +1373,17 @@ function installRobotApi() {
 /* ---------------- wiring --------------------------------------------- */
 
 // instant tooltips for anything carrying data-tip (hover or keyboard focus)
+// a short "Copied" tip above a node (the hover tips sit below)
+function flashTip(node, text = 'Copied') {
+  el.tip.textContent = text; el.tip.hidden = false;
+  const r = node.getBoundingClientRect(), tw = el.tip.offsetWidth, th = el.tip.offsetHeight;
+  el.tip.style.left = Math.max(8, Math.min(r.left + r.width / 2 - tw / 2, window.innerWidth - tw - 8)) + 'px';
+  el.tip.style.top = Math.max(8, r.top - 8 - th) + 'px';
+  clearTimeout(flashTip.t); flashTip.t = setTimeout(() => { if (el.tip.textContent === text) el.tip.hidden = true; }, 900);
+}
 function bindTips() {
+  // Item Info: click the name, selector, size, z-index, id or components to copy that value
+  el.selbox.addEventListener('click', (e) => { const n = e.target.closest('[data-copy]'); if (!n || !el.selbox.contains(n) || !n.dataset.copy) return; e.stopPropagation(); copyText(n.dataset.copy, { silent: true }); flashTip(n); });
   let cur = null;
   const show = (n) => { const text = n.dataset.tip; if (!text) return; el.tip.textContent = text; el.tip.hidden = false; const r = n.getBoundingClientRect(), tw = el.tip.offsetWidth; el.tip.style.left = Math.max(8, Math.min(r.left + r.width / 2 - tw / 2, window.innerWidth - tw - 8)) + 'px'; el.tip.style.top = (r.bottom + 8) + 'px'; cur = n; };
   const hide = () => { el.tip.hidden = true; cur = null; };
