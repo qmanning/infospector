@@ -1521,6 +1521,8 @@ function bind() {
 function defaultSize() { try { const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null'); if (s && s.w && s.h) return s; } catch (e) { /* ignore */ } const a = availArea(); return { w: a.w, h: a.h, fill: false, custom: false, shape: BROWSER_SHAPE }; }
 
 async function boot() {
+  // taken before anything below writes pt:* keys (size, theme, glass, history all persist during boot)
+  let untouched = false; try { untouched = !Object.keys(localStorage).some((k) => k.startsWith('pt:')); } catch (e) { untouched = false; }
   buildDimPop();
   bind();
   const ds = defaultSize();
@@ -1536,8 +1538,16 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   if (params.get('url')) target = params.get('url');
   loadTarget(target);
-  let done = false; try { done = !!localStorage.getItem(SETUP_KEY); } catch (e) { done = true; }
-  if (params.has('setup') || !done) openSetup();
+  // First-run setup shows once, and only when this really is a first run: no flag, no other
+  // Infospector state in this browser, and nothing configured in config.js. An installed copy with
+  // a config never asks; a new origin (other port, preview URL) only asks if it's truly untouched.
+  let firstRun = true;
+  try {
+    const cfg = window.INFOSPECTOR_DEFAULTS, hasDefaults = cfg && typeof cfg === 'object' && Object.keys(cfg).length > 0;
+    const configured = typeof window.INFOSPECTOR_HOME === 'string' || typeof window.INFOSPECTOR_BRIDGE === 'string' || Array.isArray(window.INFOSPECTOR_PAGES) || hasDefaults;
+    firstRun = untouched && !localStorage.getItem(SETUP_KEY) && !configured;
+  } catch (e) { firstRun = false; }
+  if (params.has('setup') || firstRun) openSetup();
   if (params.has('doctor')) setTimeout(showDoctor, 1500);
 }
 
