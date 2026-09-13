@@ -540,7 +540,16 @@ function openModal(id, { reveal = true, focusLast = false } = {}) {
   t.modal.open = true; if (reveal) setReveal(t.anchor.selector, true);
   renderModals();
   const node = modalEls[id];
-  if (node) { node.style.zIndex = String(++state.modalZ); if (focusLast) { const tas = node.querySelectorAll('textarea'); const last = tas[tas.length - 1]; if (last) last.focus(); } }
+  if (node) {
+    node.style.zIndex = String(++state.modalZ);
+    if (focusLast) {   // start typing right away: pull focus out of the page, then focus the modal's newest textarea
+      // (re-queried each time — the modal can be repainted right after opening, replacing the node)
+      try { if (document.activeElement === el.frame) el.frame.blur(); } catch (e) { /* ignore */ }
+      const pick = () => { const m = modalEls[id]; const tas = m ? m.querySelectorAll('textarea') : []; return tas[tas.length - 1] || null; };
+      const go = () => { const ta = pick(); if (!ta || document.activeElement === ta) return; ta.focus({ preventScroll: true }); const n = ta.value.length; try { ta.setSelectionRange(n, n); } catch (e) { /* ignore */ } };
+      go(); requestAnimationFrame(go); setTimeout(go, 80); setTimeout(go, 300);
+    }
+  }
 }
 function closeModal(id) {
   const t = state.targets.find((x) => x.id === id); if (!t) return;
