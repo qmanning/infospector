@@ -7,6 +7,7 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ### Added
 - **Shift+drag while peeking** (Inspect off) draws an area selection; Inspect turns on as it lands.
+- Clicking anywhere on the canvas (background, rulers, or inside the page) hides open note containers; unsaved text is kept until you reopen the marker.
 
 ### Fixed
 - Leaving a note (from an element, a guide, or a gap readout) now focuses the textarea so you can type immediately — the modal was being repainted right after opening, detaching the node that had been focused.

@@ -559,6 +559,18 @@ function closeModal(id) {
   if (!t.notes.length) { if (t.ruler) setRuler(t.anchor.selector, false); state.targets = state.targets.filter((x) => x.id !== id); }
   persist();
 }
+// click-off: hide every open note container. Unsaved text is kept (reopen the marker to continue);
+// only empty drafts are dropped, and an object left with nothing on it disappears.
+function hideOpenModals() {
+  let changed = false;
+  state.targets.slice().forEach((t) => {
+    if (!t.modal.open) return;
+    changed = true; t.modal.open = false; setReveal(t.anchor.selector, false);
+    t.notes = t.notes.filter((n) => !(n._draft && !(n._pending !== undefined ? n._pending : n.text).trim()));
+    if (!t.notes.length) { if (t.ruler) setRuler(t.anchor.selector, false); state.targets = state.targets.filter((x) => x.id !== t.id); }
+  });
+  if (changed) { Object.keys(modalEls).forEach((id) => { const n = modalEls[id]; delete modalEls[id]; n.classList.add('pt-closing'); setTimeout(() => n.remove(), 200); }); persist(); }
+}
 function removeNote(t, note) {
   t.notes = t.notes.filter((n) => n.id !== note.id);
   if (!t.notes.length) { if (t.ruler) setRuler(t.anchor.selector, false); state.targets = state.targets.filter((x) => x.id !== t.id); closeModal(t.id); }
@@ -1224,7 +1236,12 @@ function bindRulersAndBg() {
     else if (e.key === 'Escape') { selectGuide(null); closeCtx(); if (state.selected) hideSelbox(); }   // Esc also deselects (no × in the design)
   });
   // clicking the empty background deselects; right-clicking it opens the pattern menu
-  document.addEventListener('pointerdown', (e) => { const t = e.target && e.target.closest ? e.target : document.body; if (state.selectedGuide && !t.closest('.pt-guide, #pt-gbox, #pt-confirm, .pt-modal')) selectGuide(null); }, true);
+  document.addEventListener('pointerdown', (e) => {
+    const t = e.target && e.target.closest ? e.target : document.body;
+    if (state.selectedGuide && !t.closest('.pt-guide, #pt-gbox, #pt-confirm, .pt-modal')) selectGuide(null);
+    // a press on the canvas (not on a note, the toolbar, a menu, the Item Info box or the guide menu) hides open notes
+    if (!t.closest('.pt-modal, #pt-selbox, #pt-gbox, #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, #pt-confirm, .pt-sheet, #pt-gaps, #pt-keys-btn, #pt-tip')) hideOpenModals();
+  }, true);
   el.stagewrap.addEventListener('contextmenu', (e) => { if (e.target !== el.stagewrap) return; e.preventDefault(); openCtx(e.clientX, e.clientY); });
   document.addEventListener('pointerdown', (e) => { if (!el.ctx.hidden && !el.ctx.contains(e.target)) closeCtx(); }, true);
   const segIcons = { dots: ICONS.grip, grid: ICONS.grid3, lines: ICONS.diagonal, none: ICONS.ban };
@@ -1525,7 +1542,7 @@ function bind() {
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
     else if (d.type === 'snapLines') state.snap = { x: d.x || [], y: d.y || [] };
     else if (d.type === 'gapHover') showGaps(d.x, d.y, d.mod);
-    else if (d.type === 'frameDown') { if (state.selectedGuide) selectGuide(null); }   // a click into the page deselects the guide
+    else if (d.type === 'frameDown') { if (state.selectedGuide) selectGuide(null); hideOpenModals(); }   // a click into the page deselects the guide and hides open notes
     else if (d.type === 'rulerRect') { if (state.activeRulers.has(d.selector)) wrapGuides(d.selector, d.rect, { create: !!state.wrapPending && state.wrapPending === d.selector }); if (state.wrapPending === d.selector) state.wrapPending = null; }   // element measured (or moved) → snap guides to its edges
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
     else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in
