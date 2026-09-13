@@ -101,6 +101,13 @@
     </div>
   </main>
 
+  <!-- keyboard shortcuts: a small floating button under the stage -->
+  <button class="pt-rbtn" id="pt-keys-btn" aria-label="Keyboard shortcuts" aria-haspopup="true" data-tip="Keyboard shortcuts · ?"></button>
+  <div class="pt-menu-pop pt-keys-pop" id="pt-keys-pop" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="pt-ctx-title">Shortcuts</div>
+    <dl class="pt-keys" id="pt-keys-list"></dl>
+  </div>
+
   <!-- "Item Info" (from the Figma spec): text block | 2px grip | icon stack -->
   <div id="pt-selbox" hidden>
     <div class="pt-sb-inner">
