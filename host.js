@@ -68,6 +68,7 @@ const ICONS = {
   grip: svg('<circle cx="12" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="19" r="1"/><circle cx="5" cy="19" r="1"/>'),
   grid3: svg('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'),
   diagonal: svg('<path d="M3 21L21 3M3 13L13 3M11 21L21 11M19 21L21 19M3 5L4.5 3.5"/>'),
+  rotateCcw: svg('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'),
   upload: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>'),
   copy: svg('<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'),
   trash: svg('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6M14 11v6"/>'),
@@ -93,7 +94,7 @@ const el = {
   selbox: $('pt-selbox'), sbName: $('pt-sb-name'), sbSel: $('pt-sb-sel'), sbInfo: $('pt-sb-info'), addNote: $('pt-add-note'), rulerBtn: $('pt-ruler'),
   rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
-  colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'),
+  colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), colAccent: $('pt-col-accent'), colAccentTxt: $('pt-col-accent-txt'),
   apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'),
   apBlur: $('pt-ap-blur'), apBacking: $('pt-ap-backing'), apSat: $('pt-ap-sat'), apLight: $('pt-ap-light'), apDark: $('pt-ap-dark'), apTint: $('pt-ap-tint'), apColor: $('pt-ap-color'), apColorTxt: $('pt-ap-color-txt'), apReset: $('pt-ap-reset'),
   modals: $('pt-modals'), toast: $('pt-toast')
@@ -111,7 +112,7 @@ const state = {
   activeRulers: new Set(), modalZ: 111, modalCount: 0,
   rulers: false, peek: false,                         // peek: Shift held outside inspect mode → boxes + rulers
   guides: [], selectedGuide: null,                    // guides: [{ id, axis: 'x'|'y', pos }] in logical px
-  bg: { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null },  // null = theme default; *Theme = theme the color was picked in
+  bg: { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null, accent: null },  // null = theme default; *Theme = theme the color was picked in
   glass: { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null }   // Appearance; null = recipe default
 };
 
@@ -156,6 +157,7 @@ function fit() {
   const fitting = !state.fillMode && s < 1;
   document.body.classList.toggle('pt-fit', fitting);
   el.dimTrigger.classList.toggle('pt-fit-glow', fitting);
+  el.dimVal.innerHTML = `${state.w} × ${state.h}` + (fitting ? `<span class="pt-dim-scale">· ${Math.round(s * 100)}%</span>` : '');
   drawRulers();
   positionGuides();
   placeSelbox();
@@ -777,7 +779,7 @@ function startGuideFromRuler(axis, e) {
 /* ---------------- background pattern --------------------------------- */
 
 const BG_KEY = 'pt:bg', DEFAULTS_KEY = 'pt:defaults';
-const BG_BASE = { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null };
+const BG_BASE = { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null, accent: null };
 const GLASS_BASE = { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null };
 // ---- theme-aware colors: a color picked in one theme keeps its hue in the other, re-lit for contrast ----
 function hslOf(css) {
@@ -848,6 +850,9 @@ function applyBg() {
     root.setProperty('--pt-ground', gnd);
     root.setProperty('--pt-ground-2', lumOf(gnd) > 0.4 ? mixCss(gnd, '#000000', 0.05) : mixCss(gnd, '#ffffff', 0.06));   // the top-of-page glow follows the chosen ground
   } else { root.removeProperty('--pt-ground'); root.removeProperty('--pt-ground-2'); }
+  if (state.bg.accent) root.setProperty('--pt-accent', state.bg.accent); else root.removeProperty('--pt-accent');   // same in both themes: it's a highlight
+  const acc = getComputedStyle(document.documentElement).getPropertyValue('--pt-accent').trim();
+  root.setProperty('--pt-accent-ink', contrast('#ffffff', acc) >= 3 ? '#ffffff' : '#111111');   // text on accent-filled controls: white when it clears 3:1 (bold button text), else near-black
   updateRulerInk();
   if (state.glass) applyGlass();   // the UI ink depends on the ground under the backing
   const order = ['dots', 'grid', 'lines', 'none'];
@@ -874,7 +879,7 @@ function updateRulerInk() {
 }
 function loadBg() {
   state.bg = userDefaults().bg;
-  try { const b = JSON.parse(localStorage.getItem(BG_KEY) || 'null'); if (b && b.pattern) state.bg = { pattern: b.pattern, opacity: Number.isFinite(b.opacity) ? b.opacity : 50, patternColor: b.patternColor || null, groundColor: b.groundColor || null, patternTheme: b.patternTheme || null, groundTheme: b.groundTheme || null }; } catch (e) { /* ignore */ }
+  try { const b = JSON.parse(localStorage.getItem(BG_KEY) || 'null'); if (b && b.pattern) state.bg = { pattern: b.pattern, opacity: Number.isFinite(b.opacity) ? b.opacity : 50, patternColor: b.patternColor || null, groundColor: b.groundColor || null, patternTheme: b.patternTheme || null, groundTheme: b.groundTheme || null, accent: b.accent || null }; } catch (e) { /* ignore */ }
   applyBg();
 }
 // ---- color helpers: chips need hex; the text field takes hex / rgb() / hsl() / hsb() ----
@@ -927,7 +932,10 @@ function syncColorInputs() {
   el.colPattern.value = toHex(pat); el.colGround.value = toHex(gnd);
   if (document.activeElement !== el.colPatternTxt) el.colPatternTxt.value = formatColor(pat, fmt);
   if (document.activeElement !== el.colGroundTxt) el.colGroundTxt.value = formatColor(gnd, fmt);
-  el.colPatternTxt.classList.remove('pt-invalid'); el.colGroundTxt.classList.remove('pt-invalid');
+  const acc = cs.getPropertyValue('--pt-accent').trim();
+  el.colAccent.value = toHex(acc);
+  if (document.activeElement !== el.colAccentTxt) el.colAccentTxt.value = formatColor(acc, fmt);
+  el.colPatternTxt.classList.remove('pt-invalid'); el.colGroundTxt.classList.remove('pt-invalid'); el.colAccentTxt.classList.remove('pt-invalid');
 }
 /* ---------------- appearance (the glass recipe's dials) ---------------- */
 
@@ -1022,6 +1030,8 @@ function bindRulersAndBg() {
   // color chips (native picker) + free-text values; Reset returns to the theme defaults
   el.colPattern.addEventListener('input', () => { state.bg.patternColor = el.colPattern.value; state.bg.patternTheme = currentTheme(); applyBg(); });
   el.colGround.addEventListener('input', () => { state.bg.groundColor = el.colGround.value; state.bg.groundTheme = currentTheme(); applyBg(); });
+  el.colAccent.addEventListener('input', () => { state.bg.accent = el.colAccent.value; applyBg(); });
+  el.colAccentTxt.addEventListener('change', () => { const v = parseColor(el.colAccentTxt.value); if (!v) { el.colAccentTxt.classList.add('pt-invalid'); return; } state.bg.accent = v; applyBg(); });
   const bindTxt = (inp, key) => inp.addEventListener('change', () => { const v = parseColor(inp.value); if (!v) { inp.classList.add('pt-invalid'); return; } state.bg[key] = v; state.bg[key === 'patternColor' ? 'patternTheme' : 'groundTheme'] = currentTheme(); applyBg(); });
   bindTxt(el.colPatternTxt, 'patternColor'); bindTxt(el.colGroundTxt, 'groundColor');
   // Appearance sliders drive the glass recipe live
@@ -1177,6 +1187,7 @@ function bindTips() {
 function bind() {
   el.inspect.innerHTML = ICONS.crosshair; el.shot.innerHTML = ICONS.camera;
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
+  el.apReset.innerHTML = ICONS.rotateCcw;
   el.addNote.innerHTML = ICONS.notebookPen; el.rulerBtn.innerHTML = ICONS.ruler;
   updateThemeIcon();
   bindTips();
