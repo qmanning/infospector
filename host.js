@@ -110,7 +110,7 @@ const state = {
   url: null, pageKey: null,
   pages: [], activeIdx: -1,
   targets: [], store: null, unsubscribe: null, loadTimer: null,
-  selected: null, selPinned: false, hoverTimer: null,   // info box: transient on hover, pinned by a click
+  selected: null, selPinned: false, hoverTimer: null, hoverShowTimer: null,   // info box: transient on hover (after a dwell), pinned by a click
   activeRulers: new Set(), modalZ: 111, modalCount: 0,
   rulers: false, peek: false,                         // peek: Shift held outside inspect mode → boxes + rulers
   guides: [], selectedGuide: null, snap: null,        // guides: [{ id, axis: 'x'|'y', pos, for?, snap? }] in logical px; snap: element edges from the frame
@@ -714,6 +714,7 @@ function makeDraggable(node, t) {
 /* ---------------- rulers & guides ------------------------------------ */
 
 const RULER_PX = 20;
+const HOVER_DELAY = 2000;   // ms the cursor must dwell on an element before the Item Info box appears (a click is immediate)
 const GUIDES_KEY = (k) => 'pt:guides:' + k;
 
 function setRulers(on) {
@@ -785,7 +786,7 @@ function positionGuides() {
     if (gd.axis === 'y') n.style.top = px + 'px'; else n.style.left = px + 'px';
     n.classList.toggle('pt-selected', gd.id === state.selectedGuide);
     n.classList.toggle('pt-snapped', !!gd.snap);
-    n.querySelector('.pt-guide-label').textContent = Math.round(gd.pos) + (gd.gap ? ' · ' + gd.gap.size + 'px' : '');
+    n.querySelector('.pt-guide-label').textContent = (gd.axis === 'y' ? 'Y: ' : 'X: ') + Math.round(gd.pos) + (gd.gap ? ' · ' + gd.gap.size + 'px' : '');
   });
   placeGbox();
 }
@@ -793,7 +794,8 @@ function selectGuide(id) { state.selectedGuide = id; if (id && document.activeEl
 // the purple menu next to the selected guide's label
 function placeGbox() {
   const box = $('pt-gbox'); const gd = state.guides.find((g) => g.id === state.selectedGuide);
-  if (!gd || !state.rulers) { box.hidden = true; return; }
+  const t = gd && findTargetByGuide(gd.id);
+  if (!gd || !state.rulers || (t && t.modal && t.modal.open)) { box.hidden = true; return; }   // action chosen: the note modal is open, the menu steps aside
   box.hidden = false;
   const vr = el.viewport.getBoundingClientRect(), s = state.scale, bw = box.offsetWidth, bh = box.offsetHeight;
   let x, y;
@@ -848,8 +850,10 @@ function showGaps(x, y, mod) {
     const line = document.createElement('div'); line.className = 'pt-gap-line';
     if (axis === 'y') { line.style.left = Math.round(x * s) + 'px'; line.style.top = Math.round(pr.from * s) + 'px'; line.style.width = '1px'; line.style.height = Math.round(size * s) + 'px'; }
     else { line.style.top = Math.round(y * s) + 'px'; line.style.left = Math.round(pr.from * s) + 'px'; line.style.height = '1px'; line.style.width = Math.round(size * s) + 'px'; }
-    const t = document.createElement('button'); t.className = 'pt-gap'; t.textContent = size + 'px'; t.dataset.tip = 'Leave a note on this space';
-    t.style.left = Math.round((axis === 'y' ? x : mid) * s) + 'px'; t.style.top = Math.round((axis === 'y' ? mid : y) * s) + 'px';
+    const t = document.createElement('button'); t.className = 'pt-gap'; t.textContent = (axis === 'y' ? 'Y: ' : 'X: ') + size + 'px'; t.dataset.tip = 'Leave a note on this space';
+    // the vertical reading sits on its line at the pointer's x; the horizontal one on its line at the
+    // pointer's y — and when both would land on the pointer, the horizontal one steps down a row
+    t.style.left = Math.round((axis === 'y' ? x : mid) * s) + 'px'; t.style.top = Math.round((axis === 'y' ? mid : y) * s) + (axis === 'x' && py ? 26 : 0) + 'px';   // screen px, so it clears the other tag at any zoom
     const gap = { axis, from: pr.from, to: pr.to, at: Math.round(axis === 'y' ? x : y), cross };
     t.addEventListener('pointerdown', (e) => e.stopPropagation());
     t.addEventListener('click', (e) => { e.stopPropagation(); addNoteToGap(gap); el.gaps.innerHTML = ''; });
@@ -1487,8 +1491,11 @@ function bind() {
     const d = e.data; if (!d || d.__pt !== 1 || d.from !== 'inspector') return;
     if (d.type === 'ready') { postToFrame({ type: 'mode', mode: state.mode }); pushPins(); state.targets.forEach((t) => { if (t.ruler) setRuler(t.anchor.selector, true); }); }
     else if (d.type === 'selected' || d.type === 'regionSelected' || d.type === 'multiSelected') showSelbox({ payload: d.payload, anchor: d.anchor });
-    else if (d.type === 'hovered') { if (!state.selPinned) showSelbox({ payload: d.payload, anchor: d.anchor }, { pin: false }); }
-    else if (d.type === 'hoverCleared') { if (!state.selPinned) { clearTimeout(state.hoverTimer); state.hoverTimer = setTimeout(() => { if (!state.selPinned) hideSelbox(); }, 350); } }
+    else if (d.type === 'hovered') {   // dwell before the box appears, so it isn't firing on every pass of the cursor
+      clearTimeout(state.hoverShowTimer);
+      if (!state.selPinned) { clearTimeout(state.hoverTimer); state.hoverShowTimer = setTimeout(() => { if (!state.selPinned) showSelbox({ payload: d.payload, anchor: d.anchor }, { pin: false }); }, HOVER_DELAY); }
+    }
+    else if (d.type === 'hoverCleared') { clearTimeout(state.hoverShowTimer); if (!state.selPinned) { clearTimeout(state.hoverTimer); state.hoverTimer = setTimeout(() => { if (!state.selPinned) hideSelbox(); }, 350); } }
     else if (d.type === 'cleared') { if (state.selected) hideSelbox(); }
     else if (d.type === 'selectionMoved') { if (state.selected) { state.selected.payload.rect = d.rect; placeSelbox(); } }
     else if (d.type === 'snapLines') state.snap = { x: d.x || [], y: d.y || [] };
