@@ -5,6 +5,18 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-13
+
+### Added
+- **Rotate** button (left of Inspect, `arrow-left-right`): swaps the stage's width and height — landscape ↔ portrait. It changes the size only; the canvas never turns.
+
+### Changed
+- iPhone Duo Inner preset is landscape (2670 × 1878).
+
+### Fixed
+- **Esc pressed while the page has focus** now reaches the escape hatch too, so it leaves Inspect (and deselects/closes everything) no matter where the keyboard focus is.
+- A click into the page also clears a lingering resize outline.
+
 ## [0.3.1] — 2026-09-13
 
 ### Changed

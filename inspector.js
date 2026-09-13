@@ -488,6 +488,7 @@
   ['dblclick', 'auxclick', 'contextmenu'].forEach(function (t) { document.addEventListener(t, blockMouse, true); });
   // ⇧⌘I inside the framed page toggles inspect on the host
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { send('escape'); return; }        // Esc while the frame has focus → host escape hatch (leaves Inspect too)
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key || '').toLowerCase() === 'i') { e.preventDefault(); send('toggleInspect'); return; }
     if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key || '').toLowerCase() === 'k') { e.preventDefault(); send('focusSearch'); return; }
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.altKey && (e.key === ' ' || e.code === 'Space')) { e.preventDefault(); send('shotAll'); return; }
