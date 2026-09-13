@@ -195,7 +195,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 /* instant tooltips for the icon buttons ([data-tip]) */
 #pt-tip[hidden] { display: none; }
-#pt-tip { position: fixed; z-index: 160; pointer-events: none; padding: 5px 9px; border-radius: 10px; font-size: 11.5px; font-weight: 500; white-space: nowrap; color: var(--pt-text); background: var(--pt-glass-2); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow-sm); }
+#pt-tip { position: fixed; z-index: 200; pointer-events: none; padding: 5px 9px; border-radius: 10px; font-size: 11.5px; font-weight: 500; white-space: nowrap; color: var(--pt-text); background: var(--pt-glass-2); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow-sm); }
 
 /* overflow menu */
 .pt-menu { position: relative; }
@@ -274,6 +274,15 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 #pt-stage-viewport { position: absolute; top: 0; left: 0; transform-origin: top left; overflow: hidden; background: #fff;
   transition: width 280ms cubic-bezier(.22,.61,.36,1), height 280ms cubic-bezier(.22,.61,.36,1), transform 280ms cubic-bezier(.22,.61,.36,1), border-radius 280ms cubic-bezier(.22,.61,.36,1); }
 #pt-frame { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+/* screenshot in progress: dim the stage and sweep scan lines over it until the image is ready */
+#pt-scan { position: absolute; inset: 0; z-index: 40; pointer-events: none; border-radius: inherit; overflow: hidden;
+  background: rgba(0, 0, 0, 0.45); opacity: 0; transition: opacity 160ms; }
+#pt-scan::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.07) 3px 4px); }
+#pt-scan::after { content: ""; position: absolute; left: 0; right: 0; height: 14%; top: -14%;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--pt-accent) 55%, transparent) 60%, var(--pt-accent));
+  box-shadow: 0 2px 24px color-mix(in srgb, var(--pt-accent) 60%, transparent); animation: pt-scan 1.1s linear infinite; }
+#pt-stage.pt-scanning #pt-scan { opacity: 1; }
+@keyframes pt-scan { to { top: 100%; } }
 
 /* rulers: 20px red tick strips sitting just outside the border, plus a corner block */
 /* rulers fade + slide in from just outside the stage (and out again) instead of popping */
@@ -383,7 +392,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 /* ---------------- draggable note modals ---------------- */
 
-#pt-modals { position: fixed; inset: 0; pointer-events: none; z-index: 110; }
+#pt-modals { position: fixed; inset: 0; pointer-events: none; z-index: 170; }   /* notes sit above all chrome (bar 120, popovers 130, ctx 150); only confirm/setup sheets go higher */
 .pt-modal {
   position: absolute; pointer-events: auto; width: 304px;
   background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur);
@@ -448,8 +457,10 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-confirm-card .pt-ctx-actions { padding: 14px 0 0; }
 .pt-confirm-card .pt-mini.pt-danger { color: var(--pt-danger); border-color: var(--pt-danger); }
 /* shortcuts button (floats under the stage) + list */
-#pt-keys-btn { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 120; width: 32px; height: 32px; }
-#pt-keys-btn svg { width: 16px; height: 16px; }
+#pt-keys-btn { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 120; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--pt-text); color: var(--pt-ground); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }   /* solid ink dot: stands out on any page */
+#pt-keys-btn:hover { transform: translateX(-50%) translateY(-1px); background: var(--pt-text); }
+#pt-keys-btn svg { width: 10px; height: 10px; }
 .pt-keys-pop { min-width: 300px; padding: 8px 6px 6px; }
 .pt-keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; padding: 4px 6px 6px; align-items: center; }
 .pt-keys dt { margin: 0; display: flex; gap: 3px; justify-content: flex-end; }

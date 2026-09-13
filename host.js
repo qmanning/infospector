@@ -253,7 +253,9 @@ function anchorPop(pop, anchor, { align = 'left', width = null, above = false } 
   const r = anchor.getBoundingClientRect();
   if (width) pop.style.width = width + 'px';
   const pw = pop.offsetWidth, ph = pop.offsetHeight;
-  pop.style.top = (above ? Math.max(8, r.top - 8 - ph) : r.bottom + 8) + 'px';
+  const roomBelow = window.innerHeight - r.bottom - 8, roomAbove = r.top - 8;
+  const goAbove = above ? roomAbove >= ph || roomAbove >= roomBelow : ph > roomBelow && roomAbove > roomBelow;   // flip when it would be cut off
+  pop.style.top = Math.max(8, Math.min(goAbove ? r.top - 8 - ph : r.bottom + 8, window.innerHeight - ph - 8)) + 'px';
   const x = align === 'right' ? r.right - pw : align === 'center' ? r.left + r.width / 2 - pw / 2 : r.left;
   pop.style.left = Math.max(8, Math.min(x, window.innerWidth - pw - 8)) + 'px';
 }
@@ -1160,9 +1162,9 @@ function showPop(node, { attr = false } = {}) { node.classList.remove('pt-closin
 function openCtx(x, y) {
   showPop(el.ctx, { attr: true });
   syncColorInputs(); syncGlassInputs();
-  const r = el.ctx.getBoundingClientRect();
-  el.ctx.style.left = Math.min(x, window.innerWidth - r.width - 8) + 'px';
-  el.ctx.style.top = Math.min(y, window.innerHeight - r.height - 8) + 'px';
+  const w = el.ctx.offsetWidth, h = el.ctx.offsetHeight;   // offset*: unaffected by the pop-in scale transform
+  el.ctx.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + 'px';
+  el.ctx.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + 'px';
 }
 function closeCtx() { hidePop(el.ctx, { attr: true }); }
 
@@ -1315,7 +1317,7 @@ function loadRasterizer() { if (window.htmlToImage) return Promise.resolve(windo
 async function screenshot() {
   if (state.frameMode !== 'full') { toast('Screenshots need a same-origin page (external pages are cross-origin).'); return; }
   let lib; try { lib = await loadRasterizer(); } catch (e) { toast('Add vendor/html-to-image.js to enable screenshots'); return; }
-  el.shot.disabled = true;
+  el.shot.disabled = true; el.stage.classList.add('pt-scanning');   // dim + scan lines until the image is ready
   try {
     const doc = el.frame.contentDocument, dpr = window.devicePixelRatio || 1;
     const inspecting = state.mode === 'inspect' || state.rulers;
@@ -1363,7 +1365,7 @@ async function screenshot() {
     const a = document.createElement('a'); a.download = `infospector-${(state.pageKey || 'page').replace(/[^\w]+/g, '-')}-${state.w}x${state.h}${inspecting ? '-inspect' : ''}.png`; a.href = dataUrl; a.click();
     toast('Screenshot saved');
   } catch (e) { toast('Screenshot failed — a cross-origin image may have tainted it'); }
-  finally { el.shot.disabled = false; }
+  finally { el.stage.classList.remove('pt-scanning'); el.shot.disabled = false; }
 }
 
 /* ---------------- export / import / clear ---------------------------- */
