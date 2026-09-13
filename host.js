@@ -112,6 +112,7 @@ const state = {
   activeRulers: new Set(), modalZ: 111, modalCount: 0,
   rulers: false, peek: false,                         // peek: Shift held outside inspect mode → boxes + rulers
   guides: [], selectedGuide: null,                    // guides: [{ id, axis: 'x'|'y', pos }] in logical px
+  discovered: {}, sitemap: [],
   bg: { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null, accent: null },  // null = theme default; *Theme = theme the color was picked in
   glass: { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null }   // Appearance; null = recipe default
 };
@@ -275,7 +276,8 @@ function toggleTheme() { setTheme(currentTheme() === 'light' ? 'dark' : 'light')
 
 function getHistory() { try { const a = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function pushHistory(url) { try { let a = getHistory().filter((u) => u !== url); a.unshift(url); a = a.slice(0, HISTORY_MAX); localStorage.setItem(HISTORY_KEY, JSON.stringify(a)); } catch (e) { /* ignore */ } }
-function displayUrl(u) { try { const x = new URL(u); return x.origin === location.origin ? (x.pathname + x.search) || '/' : u; } catch (e) { return u; } }
+function displayUrl(u) { return u; }   // the URL bar shows the full address of the page on stage
+function shortUrl(u) { try { const x = new URL(u); return x.origin === location.origin ? (x.pathname + x.search) || '/' : u; } catch (e) { return u; } }
 
 /* ---------------- corner resize -------------------------------------- */
 
@@ -345,6 +347,7 @@ async function onFrameLoad() {
   state.url = realUrl;
   el.omni.value = displayUrl(realUrl); el.omniWrap.classList.toggle('pt-has-value', !!el.omni.value);
   pushHistory(realUrl);
+  harvestLinks(doc);
   await switchPage(realUrl);
 }
 
@@ -1062,21 +1065,80 @@ function bindRulersAndBg() {
 
 /* ---------------- typeahead ------------------------------------------ */
 
-async function loadManifest() { try { const res = await fetch(PT_BASE + 'pages.json', { cache: 'no-store' }); if (res.ok) { const data = await res.json(); if (Array.isArray(data)) state.pages = data; } } catch (e) { /* URL paste still works */ } }
+/*
+ * Where the "Pages" list comes from (all optional, merged, de-duped by path):
+ *   1. pages.json next to index.html            — curated: [{ title, path, type }]
+ *   2. window.INFOSPECTOR_PAGES in config.js     — same shape, for projects that generate it
+ *   3. /sitemap.xml (or a sitemap index)          — zero setup: most frameworks emit one
+ *   4. links harvested from every page loaded on the stage (persisted) — learns as you browse
+ */
+const DISCOVERED_KEY = 'pt:discovered', DISCOVERED_MAX = 300;
+async function loadManifest() {
+  try { const res = await fetch(PT_BASE + 'pages.json', { cache: 'no-store' }); if (res.ok) { const data = await res.json(); if (Array.isArray(data)) state.pages = data; } } catch (e) { /* fine */ }
+  if (Array.isArray(window.INFOSPECTOR_PAGES)) state.pages = state.pages.concat(window.INFOSPECTOR_PAGES);
+  try { state.discovered = JSON.parse(localStorage.getItem(DISCOVERED_KEY) || '{}') || {}; } catch (e) { state.discovered = {}; }
+  loadSitemap();   // async; results appear when they arrive
+}
+const humanize = (path) => { const seg = path.replace(/\/+$/, '').split('/').pop() || 'Home'; return seg.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()); };
+function pagePath(href) {   // same-origin, page-like href → clean path, else null
+  try {
+    const u = new URL(href, location.origin);
+    if (u.origin !== location.origin || u.pathname.startsWith(PT_BASE)) return null;
+    if (/\.(png|jpe?g|gif|svg|webp|ico|css|js|json|xml|txt|pdf|zip|mp4|webm|woff2?)$/i.test(u.pathname)) return null;
+    if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/_next/')) return null;
+    return u.pathname.replace(/\/{2,}/g, '/');
+  } catch (e) { return null; }
+}
+function rememberPages(entries) {   // entries: [{ path, title }]
+  let changed = false;
+  entries.forEach(({ path, title }) => { if (!path) return; const cur = state.discovered[path]; if (!cur || (title && !cur.title)) { state.discovered[path] = { title: title || cur?.title || '' }; changed = true; } });
+  if (!changed) return;
+  const keys = Object.keys(state.discovered); if (keys.length > DISCOVERED_MAX) keys.slice(0, keys.length - DISCOVERED_MAX).forEach((k) => delete state.discovered[k]);
+  try { localStorage.setItem(DISCOVERED_KEY, JSON.stringify(state.discovered)); } catch (e) { /* ignore */ }
+}
+function harvestLinks(doc) {
+  try {
+    const seen = new Map();
+    doc.querySelectorAll('a[href]').forEach((a) => { const path = pagePath(a.getAttribute('href')); if (!path || seen.has(path)) return; const t = (a.textContent || '').trim().replace(/\s+/g, ' '); seen.set(path, t.length > 1 && t.length <= 48 ? t : ''); });
+    rememberPages([...seen].map(([path, title]) => ({ path, title })));
+  } catch (e) { /* cross-origin or odd doc */ }
+}
+async function loadSitemap() {
+  const fetchXml = async (url) => { try { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) return null; const t = await r.text(); if (!/<(urlset|sitemapindex)/i.test(t)) return null; return new DOMParser().parseFromString(t, 'application/xml'); } catch (e) { return null; } };
+  let xml = await fetchXml(location.origin + '/sitemap.xml');
+  if (!xml) { try { const r = await fetch(location.origin + '/robots.txt'); const m = r.ok && (await r.text()).match(/^sitemap:\s*(\S+)/im); if (m) xml = await fetchXml(m[1]); } catch (e) { /* none */ } }
+  if (!xml) return;
+  let docs = [xml];
+  if (xml.querySelector('sitemapindex')) docs = (await Promise.all([...xml.querySelectorAll('sitemap > loc')].slice(0, 8).map((l) => fetchXml(l.textContent.trim())))).filter(Boolean);
+  const entries = [];
+  docs.forEach((d) => d.querySelectorAll('url > loc').forEach((l) => { const path = pagePath(l.textContent.trim()); if (path) entries.push({ path, title: '' }); }));
+  state.sitemap = entries;
+}
+// merged, de-duped page list: curated first (in order), then everything else by path
+function allPages() {
+  const out = new Map();
+  state.pages.forEach((p) => { if (p && p.path && !out.has(p.path)) out.set(p.path, { title: p.title || humanize(p.path), path: p.path, type: p.type || 'page' }); });
+  const rest = [];
+  (state.sitemap || []).forEach((p) => { if (!out.has(p.path)) rest.push({ title: humanize(p.path), path: p.path, type: 'sitemap' }); });
+  Object.entries(state.discovered || {}).forEach(([path, v]) => { if (!out.has(path) && !rest.some((r) => r.path === path)) rest.push({ title: v.title || humanize(path), path, type: 'link' }); });
+  rest.sort((a, b) => a.path.localeCompare(b.path)).forEach((p) => out.set(p.path, p));
+  return [...out.values()];
+}
 function isUrlish(v) { return /^https?:\/\//i.test(v) || v.startsWith('/'); }
 function renderResults(q) {
-  const raw = q.trim(), query = raw.toLowerCase();
+  const typed = q.trim();
+  const raw = typed === (state.url || '') ? '' : typed, query = raw.toLowerCase();   // the current page's own URL isn't a search
   let items = [];
   if (isUrlish(raw)) items.push({ title: 'Open URL', path: raw, type: 'url', _url: true });
   if (!isUrlish(raw)) {
-    const hist = getHistory().filter((u) => !query || u.toLowerCase().includes(query) || displayUrl(u).toLowerCase().includes(query)).map((u) => ({ title: displayUrl(u), path: u, type: 'recent', group: 'Recent' }));
+    const hist = getHistory().filter((u) => !query || u.toLowerCase().includes(query)).map((u) => ({ title: shortUrl(u), path: u, type: 'recent', group: 'Recent' }));
     items = items.concat(hist);
-    const pages = (query ? state.pages.filter((p) => (p.title || '').toLowerCase().includes(query) || (p.path || '').toLowerCase().includes(query)) : state.pages).map((p) => ({ title: p.title, path: p.path, type: p.type, group: 'Pages' }));
+    const pages = allPages().filter((p) => !query || p.title.toLowerCase().includes(query) || p.path.toLowerCase().includes(query)).map((p) => Object.assign({ group: 'Pages' }, p));
     items = items.concat(pages);
   }
-  el.results.innerHTML = '';
+  el.results.innerHTML = '<div class="pt-omni-hint">Copy Paste URL to Load on Stage</div>';
   showPop(el.results); anchorPop(el.results, el.omniWrap, { width: el.omniWrap.offsetWidth });
-  if (!items.length) { el.results.innerHTML = '<div class="pt-omni-empty">No matches. Paste a full URL to open any page.</div>'; state.activeIdx = -1; return; }
+  if (!items.length) { state.activeIdx = -1; return; }
   el.results.classList.add('pt-open');
   let lastGroup = null;
   items.slice(0, 40).forEach((it) => {
@@ -1214,7 +1276,9 @@ function bind() {
   el.theme.addEventListener('click', toggleTheme);
 
   el.omni.addEventListener('input', () => { el.omniWrap.classList.toggle('pt-has-value', !!el.omni.value); renderResults(el.omni.value); });
-  el.omni.addEventListener('focus', () => renderResults(el.omni.value));
+  el.omni.addEventListener('focus', () => { el.omni.select(); renderResults(el.omni.value); });
+  // a pasted URL loads straight away — no Enter needed
+  el.omni.addEventListener('paste', (e) => { const t = (e.clipboardData || window.clipboardData).getData('text').trim(); if (isUrlish(t)) { e.preventDefault(); el.omni.value = t; choose(t); } });
   el.omni.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }

@@ -61,7 +61,20 @@ Not served from a project (opened from disk)? It falls back to `https://qmanning
 | `?bridge=http://localhost:7331` | use the file bridge (see below) |
 | `window.INFOSPECTOR_HOME = "/path"` | default page (set in a tiny inline `<script>` before `host.js`) |
 | `window.INFOSPECTOR_BRIDGE = "http://…"` | default bridge URL |
-| `pages.json` (next to `index.html`) | list of your pages for the search box — `[{ "title", "path", "type" }]` |
+| `pages.json` (next to `index.html`) | curated list of pages for the search box — `[{ "title", "path", "type" }]` |
+| `window.INFOSPECTOR_PAGES = [...]` in `config.js` | same shape, for projects that generate the list |
+
+### How the search box knows your pages
+
+Nothing to set up for the basics — the list builds itself, and gets better with a little help:
+
+1. **Paste any URL** (or type a path) — it loads on the stage. Always works.
+2. **Sitemap** — on boot it reads `/sitemap.xml` (or the one named in `robots.txt`), so a Next.js,
+   Astro, WordPress, Hugo… site is searchable immediately.
+3. **Links it sees** — every page you load on the stage is scanned for same-origin links, which
+   are remembered (per browser) with their link text as the title.
+4. **Curated** — drop a `pages.json` next to `index.html` (or set `window.INFOSPECTOR_PAGES` in
+   `config.js`) to name and order the pages you care about; those always list first.
 
 Sizes are one array at the top of `host.js` (`PRESETS`) — add or edit devices there, including each
 device's corner radius.
