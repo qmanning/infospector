@@ -9,6 +9,12 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 - **Shift+drag while peeking** (Inspect off) draws an area selection; Inspect turns on as it lands.
 - Clicking anywhere on the canvas (background, rulers, or inside the page) hides open note containers; unsaved text is kept until you reopen the marker.
 
+### Added (cont.)
+- Right-click → **Start-up**: choose the stage size Infospector opens with (Fit to Window by default, Last used, or any preset) and the page it opens; both go into the config snippet (`INFOSPECTOR_START_SIZE`).
+- Pressing Enter on the page already on stage reloads it; loading is now visible.
+- Inspect button uses Lucide's `vector-square` icon.
+- Doctor flags preview deployments behind a login (Vercel/Netlify protection) — the stage can't frame those.
+
 ### Fixed
 - Leaving a note (from an element, a guide, or a gap readout) now focuses the textarea so you can type immediately — the modal was being repainted right after opening, detaching the node that had been focused.
 

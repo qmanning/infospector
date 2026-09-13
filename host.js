@@ -76,7 +76,7 @@ const ICONS = {
   trash: svg('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6M14 11v6"/>'),
   x: svg('<path d="M18 6 6 18M6 6l12 12"/>'),
   camera: svg('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>'),
-  crosshair: svg('<circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>'),
+  vectorSquare: svg('<path d="M19.5 7a24 24 0 0 1 0 10"/><path d="M4.5 7a24 24 0 0 0 0 10"/><path d="M7 19.5a24 24 0 0 0 10 0"/><path d="M7 4.5a24 24 0 0 1 10 0"/><rect x="17" y="17" width="5" height="5" rx="1"/><rect x="17" y="2" width="5" height="5" rx="1"/><rect x="2" y="17" width="5" height="5" rx="1"/><rect x="2" y="2" width="5" height="5" rx="1"/>'),   // Lucide vector-square: the Inspect icon
   dots: svg('<circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/>')
 };
 function svg(inner) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>'; }
@@ -319,13 +319,16 @@ function bindHandles() {
 function resolveUrl(input) { const raw = input.trim(); if (!raw) return null; if (/^https?:\/\//i.test(raw)) return raw; if (raw.startsWith('/')) return location.origin + raw; return location.origin + '/' + raw.replace(/^\/+/, ''); }
 function loadTarget(input) {
   const url = resolveUrl(input); if (!url) return;
+  const same = url === state.url && !!el.frame.src;
   state.url = url;
   el.omni.value = displayUrl(url); el.omniWrap.classList.toggle('pt-has-value', !!el.omni.value);
-  el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.remove('pt-show');
+  el.ovBlocked.classList.remove('pt-show'); el.ovEmpty.classList.add('pt-show');   // something visibly happens the moment you ask for a page
   setFrameMode('empty');
   clearTimeout(state.loadTimer);
-  state.loadTimer = setTimeout(() => { if (state.frameMode === 'empty') { el.ovBlocked.classList.add('pt-show'); setFrameMode('blocked'); } }, 12000);
-  el.frame.src = url;
+  state.loadTimer = setTimeout(() => { if (state.frameMode === 'empty') { el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.add('pt-show'); setFrameMode('blocked'); } }, 12000);
+  if (same) { toast('Reloading'); try { el.frame.contentWindow.location.reload(); return; } catch (e) { /* cross-origin: fall through and reassign */ } }
+  if (same) { el.frame.src = 'about:blank'; requestAnimationFrame(() => { el.frame.src = url; }); }   // same URL: bounce through blank so it really reloads
+  else el.frame.src = url;
 }
 // the search icon doubles as the inspectability indicator: a "ban" icon when the page can't be inspected
 function setFrameMode(m) {
@@ -343,6 +346,7 @@ async function onFrameLoad() {
   if (!state.url) return;
   el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.remove('pt-show');
   let doc = null; try { doc = el.frame.contentDocument; } catch (e) { doc = null; }
+  if (doc && doc.location && doc.location.href === 'about:blank') return;   // the blank hop of a forced reload
   if (!doc) { setFrameMode('viewonly'); pushHistory(state.url); await switchPage(state.url); return; }
   setFrameMode('full');
   try { const win = el.frame.contentWindow; if (!win.__ptInspector) { const s = doc.createElement('script'); s.src = PT_BASE + 'inspector.js'; doc.body.appendChild(s); } } catch (e) { setFrameMode('viewonly'); }
@@ -955,7 +959,19 @@ function resetToDefaults() {
   const d = userDefaults(); state.glass = d.glass; state.bg = d.bg; applyGlass(); applyBg(); toast('Reset to defaults');
 }
 function saveAsDefaults() { try { localStorage.setItem(DEFAULTS_KEY, JSON.stringify({ glass: state.glass, bg: state.bg })); toast('Saved as your defaults'); } catch (e) { toast('Could not save'); } }
-const HOME_KEY = 'pt:home', BRIDGE_KEY = 'pt:bridge', SETUP_KEY = 'pt:setup';
+const HOME_KEY = 'pt:home', BRIDGE_KEY = 'pt:bridge', SETUP_KEY = 'pt:setup', START_SIZE_KEY = 'pt:startsize';
+// start-up size: 'fit' (Fit to Window — the default, so the stage always fits), 'last' (whatever you used last), or 'WxH' of a preset
+const startSize = () => { try { return localStorage.getItem(START_SIZE_KEY) || (typeof window.INFOSPECTOR_START_SIZE === 'string' ? window.INFOSPECTOR_START_SIZE : '') || 'fit'; } catch (e) { return 'fit'; } };
+function syncStartInputs() {
+  const sel = $('pt-start-size'); if (!sel) return;
+  if (!sel.options.length) {
+    const add = (v, label) => { const o = document.createElement('option'); o.value = v; o.textContent = label; sel.appendChild(o); };
+    add('fit', 'Fit to Window'); add('last', 'Last used');
+    PRESETS.forEach((p) => add(p.w + 'x' + p.h, `${p.w} × ${p.h}${p.name ? ' · ' + p.name : ''}`));
+  }
+  sel.value = startSize(); if (sel.value !== startSize()) sel.value = 'fit';
+  const pg = $('pt-start-page'); if (pg && document.activeElement !== pg) pg.value = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' ? window.INFOSPECTOR_HOME : '');
+}
 const savedHome = () => { try { return localStorage.getItem(HOME_KEY) || ''; } catch (e) { return ''; } };
 const savedBridge = () => { try { return localStorage.getItem(BRIDGE_KEY) || ''; } catch (e) { return ''; } };
 function configSnippet() {
@@ -963,6 +979,7 @@ function configSnippet() {
   const home = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' ? window.INFOSPECTOR_HOME : '');
   const bridge = savedBridge() || (typeof window.INFOSPECTOR_BRIDGE === 'string' ? window.INFOSPECTOR_BRIDGE : '');
   if (home) lines.push('window.INFOSPECTOR_HOME = ' + JSON.stringify(home) + ';');
+  if (startSize() !== 'fit') lines.push('window.INFOSPECTOR_START_SIZE = ' + JSON.stringify(startSize()) + ';   // "fit" | "last" | "1280x960"');
   if (bridge) lines.push('window.INFOSPECTOR_BRIDGE = ' + JSON.stringify(bridge) + ';');
   lines.push('window.INFOSPECTOR_DEFAULTS = ' + JSON.stringify({ glass: state.glass, bg: state.bg }, null, 2) + ';');
   return lines.join('\n');
@@ -1017,6 +1034,7 @@ async function runDoctor() {
   if (same) {
     try {
       const r = await fetch(state.url, { method: 'HEAD', cache: 'no-store' });
+      if (/vercel\.com\/sso-api|\/_vercel\/|netlify\.app\/\.netlify\/identity/.test(r.url || '')) add('Deployment protection', 'fail', 'This preview redirects to a login (Vercel/Netlify protection); the stage cannot frame it — turn protection off for previews or add a bypass');
       const xfo = r.headers.get('x-frame-options') || '', csp = r.headers.get('content-security-policy') || '';
       const fa = (csp.match(/frame-ancestors([^;]*)/i) || [])[1] || '';
       const bad = /deny/i.test(xfo) || /'none'/.test(fa);
@@ -1182,7 +1200,7 @@ function showPop(node, { attr = false } = {}) { node.classList.remove('pt-closin
 
 function openCtx(x, y) {
   showPop(el.ctx, { attr: true });
-  syncColorInputs(); syncGlassInputs();
+  syncColorInputs(); syncGlassInputs(); syncStartInputs();
   const w = el.ctx.offsetWidth, h = el.ctx.offsetHeight;   // offset*: unaffected by the pop-in scale transform
   el.ctx.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + 'px';
   el.ctx.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + 'px';
@@ -1251,6 +1269,8 @@ function bindRulersAndBg() {
   el.colPattern.addEventListener('input', () => { state.bg.patternColor = el.colPattern.value; state.bg.patternTheme = currentTheme(); applyBg(); });
   el.colGround.addEventListener('input', () => { state.bg.groundColor = el.colGround.value; state.bg.groundTheme = currentTheme(); applyBg(); });
   el.colAccent.addEventListener('input', () => { state.bg.accent = el.colAccent.value; applyBg(); });
+  $('pt-start-size').addEventListener('change', (e) => { try { if (e.target.value === 'fit') localStorage.removeItem(START_SIZE_KEY); else localStorage.setItem(START_SIZE_KEY, e.target.value); } catch (err) { /* ignore */ } toast('Start-up size saved'); });
+  $('pt-start-page').addEventListener('change', (e) => { const v = e.target.value.trim(); try { if (v) localStorage.setItem(HOME_KEY, v); else localStorage.removeItem(HOME_KEY); } catch (err) { /* ignore */ } toast(v ? 'Start-up page saved' : 'Start-up page cleared'); });
   el.colAccentTxt.addEventListener('change', () => { const v = parseColor(el.colAccentTxt.value); if (!v) { el.colAccentTxt.classList.add('pt-invalid'); return; } state.bg.accent = v; applyBg(); });
   const bindTxt = (inp, key) => inp.addEventListener('change', () => { const v = parseColor(inp.value); if (!v) { inp.classList.add('pt-invalid'); return; } state.bg[key] = v; state.bg[key === 'patternColor' ? 'patternTheme' : 'groundTheme'] = currentTheme(); applyBg(); });
   bindTxt(el.colPatternTxt, 'patternColor'); bindTxt(el.colGroundTxt, 'groundColor');
@@ -1466,7 +1486,7 @@ function bindTips() {
 }
 
 function bind() {
-  el.inspect.innerHTML = ICONS.crosshair; el.shot.innerHTML = ICONS.camera;
+  el.inspect.innerHTML = ICONS.vectorSquare; el.shot.innerHTML = ICONS.camera;
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
   el.apReset.innerHTML = ICONS.rotateCcw;
   $('pt-g-note').innerHTML = ICONS.notebookPen; $('pt-g-del').innerHTML = ICONS.trash; $('pt-g-clear').innerHTML = ICONS.shredder;
@@ -1566,16 +1586,18 @@ async function boot() {
   let untouched = false; try { untouched = !Object.keys(localStorage).some((k) => k.startsWith('pt:')); } catch (e) { untouched = false; }
   buildDimPop();
   bind();
-  const ds = defaultSize();
-  if (ds.fill) enterFill();
-  else setSize(ds.w, ds.h, { animate: false, shape: ds.shape || null, custom: !!ds.custom });
+  // start-up size (right-click → Start-up): fit by default, so the stage always fits the window
+  const ss = startSize(), preset = /^(\d+)x(\d+)$/.exec(ss);
+  if (ss === 'last') { const ds = defaultSize(); if (ds.fill) enterFill(); else setSize(ds.w, ds.h, { animate: false, shape: ds.shape || null, custom: !!ds.custom }); }
+  else if (preset) { const p = PRESETS.find((x) => x.w === +preset[1] && x.h === +preset[2]); setSize(+preset[1], +preset[2], { animate: false, shape: p ? { shape: p.shape, r: p.r } : null }); }
+  else enterFill();
   installRobotApi();
   bindSetup();
   if (!window.INFOSPECTOR_BRIDGE && savedBridge()) window.INFOSPECTOR_BRIDGE = savedBridge();   // chosen in first-run setup
   state.store = await resolveStore();
   await loadManifest();
   // open: ?url → the page you were last looking at → configured home → this origin's homepage
-  let target = getHistory()[0] || savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' && window.INFOSPECTOR_HOME) || DEFAULT_HOME;
+  let target = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' && window.INFOSPECTOR_HOME) || getHistory()[0] || DEFAULT_HOME;
   const params = new URLSearchParams(location.search);
   if (params.get('url')) target = params.get('url');
   loadTarget(target);
