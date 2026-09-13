@@ -299,10 +299,26 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-guide.pt-x { top: -21px; bottom: 0; width: 7px; margin-left: -3px; cursor: col-resize; }
 .pt-guide.pt-x::after { top: 0; bottom: 0; left: 3px; width: 1px; }
 .pt-guide.pt-selected::after { background: var(--pt-guide-sel); }
-.pt-guide-label { position: absolute; font: 600 10px var(--pt-font); color: #fff; background: var(--pt-ruler); padding: 1px 5px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
+.pt-guide-label { position: absolute; z-index: 30; font: 600 10px var(--pt-font); color: #fff; background: var(--pt-ruler); padding: 1px 5px; border-radius: 4px; white-space: nowrap; pointer-events: none; }   /* above the ruler canvases */
 .pt-guide.pt-selected .pt-guide-label { background: var(--pt-guide-sel); }
-.pt-guide.pt-y .pt-guide-label { left: 2px; top: -14px; }
-.pt-guide.pt-x .pt-guide-label { top: 2px; left: 9px; }
+.pt-guide.pt-y .pt-guide-label { left: 24px; top: -14px; }   /* just inside the stage, never under the ruler */
+.pt-guide.pt-x .pt-guide-label { top: 24px; left: 9px; }
+.pt-guide.pt-snapped::after { box-shadow: 0 0 0 1px color-mix(in srgb, var(--pt-ruler) 35%, transparent); }
+/* note marker on a guide (host-drawn; element markers live in the frame) */
+.pt-guide-pin { position: absolute; z-index: 31; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; font: 700 10px var(--pt-font); pointer-events: auto; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.pt-guide.pt-y .pt-guide-pin { left: 60px; top: -6px; }
+.pt-guide.pt-x .pt-guide-pin { top: 60px; left: -6px; }
+/* ⌘-hover gap readouts */
+.pt-gaps { position: absolute; inset: 0; pointer-events: none; z-index: 27; }
+.pt-gap { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; font: 700 11px var(--pt-font); color: #fff; background: var(--pt-guide-sel); padding: 3px 8px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.35); white-space: nowrap; }
+.pt-gap:hover { filter: brightness(1.1); }
+.pt-gap-line { position: absolute; background: var(--pt-guide-sel); opacity: .6; }
+/* selected-guide menu: the Item Info box, in purple, three stacked icons */
+#pt-gbox { position: fixed; z-index: 116; display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--pt-guide-sel) 45%, transparent); background: linear-gradient(0deg, color-mix(in srgb, var(--pt-guide-sel) 38%, transparent), color-mix(in srgb, var(--pt-guide-sel) 38%, transparent)), rgba(0, 0, 0, 0.25); box-shadow: 0 0 16px 0 rgba(0, 0, 0, 0.14), -2px -2px 4px 0 rgba(0, 0, 0, 0.5) inset, 1px 1px 1px 0 rgba(255, 255, 255, 0.45) inset; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+#pt-gbox[hidden] { display: none; }
+#pt-gbox button { width: 28px; height: 28px; border-radius: 7px; border: 0; background: transparent; color: #fff; display: grid; place-items: center; cursor: pointer; opacity: .85; }
+#pt-gbox button:hover { background: rgba(255,255,255,.14); opacity: 1; }
+#pt-gbox button svg { width: 16px; height: 16px; }
 
 .pt-edge { position: absolute; z-index: 29; }
 .pt-e-t { left: -6px; right: -6px; top: -6px; height: 11px; }

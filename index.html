@@ -88,6 +88,8 @@
         <div class="pt-ruler-corner" id="pt-ruler-corner"></div>
       </div>
       <div class="pt-guides" id="pt-guides"></div>
+      <!-- ⌘-hover readouts of the space between two guides; click one to leave a note on that space -->
+      <div class="pt-gaps" id="pt-gaps"></div>
 
       <!-- invisible edge strips: hovering within ~5px of the border reveals the handles -->
       <div class="pt-edge pt-e-t"></div>
@@ -100,6 +102,13 @@
       <div class="pt-handle pt-h-se" data-corner="se"></div>
     </div>
   </main>
+
+  <!-- selected-guide menu: note / delete / delete all -->
+  <div id="pt-gbox" hidden>
+    <button id="pt-g-note" aria-label="Leave note" data-tip="Leave Note"></button>
+    <button id="pt-g-del" aria-label="Delete ruler" data-tip="Delete ruler · ⌫"></button>
+    <button id="pt-g-clear" aria-label="Delete all rulers" data-tip="Delete All Rulers"></button>
+  </div>
 
   <!-- keyboard shortcuts: a small floating button under the stage -->
   <button class="pt-rbtn" id="pt-keys-btn" aria-label="Keyboard shortcuts" aria-haspopup="true" data-tip="Keyboard shortcuts · ?"></button>
