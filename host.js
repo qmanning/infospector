@@ -119,6 +119,18 @@ const state = {
 /* ---------------- toast ---------------------------------------------- */
 
 let toastTimer = null;
+// in-app confirm: native confirm() returns false without asking inside embedded browsers
+function askConfirm(msg, okLabel = 'Delete') {
+  return new Promise((resolve) => {
+    const box = $('pt-confirm'), ok = $('pt-confirm-ok'), cancel = $('pt-confirm-cancel');
+    $('pt-confirm-msg').textContent = msg; ok.textContent = okLabel; box.hidden = false; ok.focus();
+    const done = (v) => { box.hidden = true; ok.onclick = cancel.onclick = box.onclick = null; document.removeEventListener('keydown', onKey, true); resolve(v); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+    ok.onclick = () => done(true); cancel.onclick = () => done(false);
+    box.onclick = (e) => { if (e.target === box) done(false); };
+    document.addEventListener('keydown', onKey, true);
+  });
+}
 function toast(msg) { el.toast.textContent = msg; el.toast.classList.add('pt-show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.toast.classList.remove('pt-show'), 1900); }
 
 /* ---------------- sizing / zoom / fit -------------------------------- */
@@ -1226,7 +1238,7 @@ function bind() {
   el.exportBtn.addEventListener('click', () => { exportNotes(); hidePop(el.menuPop); });
   el.importBtn.addEventListener('click', () => { el.importInput.click(); hidePop(el.menuPop); });
   el.importInput.addEventListener('change', () => { const f = el.importInput.files && el.importInput.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => importNotes(String(r.result)); r.readAsText(f); el.importInput.value = ''; });
-  el.clearBtn.addEventListener('click', () => { hidePop(el.menuPop); const n = state.targets.reduce((a, t) => a + t.notes.length, 0); if (!n) return; if (confirm(`Delete all ${n} notes on this page?`)) window.__infospector.clearAll(); });
+  el.clearBtn.addEventListener('click', () => { hidePop(el.menuPop); const n = state.targets.reduce((a, t) => a + t.notes.length, 0); if (!n) return; askConfirm(`Delete all ${n} note${n === 1 ? '' : 's'} on this page?`).then((yes) => { if (yes) { window.__infospector.clearAll(); toast('Notes cleared'); } }); });
 
   // moving onto the box keeps a hover-shown box alive; leaving it (unpinned) lets it go
   el.selbox.addEventListener('mouseenter', () => clearTimeout(state.hoverTimer));

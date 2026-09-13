@@ -419,6 +419,12 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-ctx-color input[type="text"].pt-invalid { border-color: var(--pt-danger); }
 
 /* toast */
+#pt-confirm { position: fixed; inset: 0; z-index: 190; display: grid; place-items: center; background: rgba(0, 0, 0, 0.28); }
+#pt-confirm[hidden] { display: none; }
+.pt-confirm-card { min-width: 260px; max-width: 360px; padding: 16px 16px 10px; border-radius: 18px; background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); color: var(--pt-text); }
+.pt-confirm-card p { margin: 0; font: 500 13.5px/1.45 var(--pt-font); }
+.pt-confirm-card .pt-ctx-actions { padding: 14px 0 0; }
+.pt-confirm-card .pt-mini.pt-danger { color: var(--pt-danger); border-color: var(--pt-danger); }
 #pt-toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); color: var(--pt-text); padding: 9px 15px; border-radius: 999px; font-size: 12.5px; font-weight: 500; box-shadow: var(--pt-shadow); opacity: 0; pointer-events: none; transition: opacity 160ms, transform 160ms; z-index: 140; }
 #pt-toast.pt-show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -451,7 +457,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 }
 
 /* surface reflex stack (the pen's .switcher) */
-#pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-toast, #pt-tip {
+#pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-toast, #pt-tip, .pt-confirm-card {
   /* Backing: a solid legibility layer under the glass tint (JS sets color + amount) */
   background-image: linear-gradient(color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent), color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent));
   border-color: transparent;
@@ -492,7 +498,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
   to   { opacity: 1; transform: none; filter: blur(0); }
 }
 @keyframes pt-liquid-out { to { opacity: 0; transform: translateY(-6px) scale(0.94); filter: blur(4px); } }
-.pt-dim-pop.pt-open, .pt-omni-results.pt-open, .pt-menu-pop.pt-open, #pt-ctx:not([hidden]), #pt-selbox:not([hidden]), .pt-modal {
+.pt-dim-pop.pt-open, .pt-omni-results.pt-open, .pt-menu-pop.pt-open, #pt-ctx:not([hidden]), #pt-selbox:not([hidden]), .pt-modal, #pt-confirm:not([hidden]) .pt-confirm-card {
   animation: pt-liquid-in 520ms var(--pt-spring);
   transform-origin: top center;
 }

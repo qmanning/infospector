@@ -150,6 +150,13 @@
   </div>
 
   <div id="pt-modals"></div>
+  <!-- in-app confirm (native confirm() is swallowed by embedded browsers) -->
+  <div id="pt-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="pt-confirm-msg">
+    <div class="pt-confirm-card">
+      <p id="pt-confirm-msg"></p>
+      <div class="pt-ctx-actions"><button class="pt-mini pt-danger" id="pt-confirm-ok">Delete</button><button class="pt-mini" id="pt-confirm-cancel">Cancel</button></div>
+    </div>
+  </div>
   <div id="pt-toast"></div>
   <input type="file" id="pt-import-input" accept="application/json,.json" hidden />
 
