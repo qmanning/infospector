@@ -157,6 +157,33 @@
       <div class="pt-ctx-actions"><button class="pt-mini pt-danger" id="pt-confirm-ok">Delete</button><button class="pt-mini" id="pt-confirm-cancel">Cancel</button></div>
     </div>
   </div>
+  <!-- first-run setup (also ?setup) and the self-check (?doctor / __infospector.doctor()) -->
+  <div id="pt-setup" class="pt-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="pt-setup-title">
+    <div class="pt-sheet-card">
+      <h2 id="pt-setup-title">Set up Infospector</h2>
+      <p class="pt-sheet-sub">A minute now, or skip and change any of this later (right-click the background).</p>
+      <label class="pt-field"><span>Default page</span><input type="text" id="pt-setup-home" spellcheck="false" placeholder="/" /></label>
+      <label class="pt-field"><span>Theme</span>
+        <span class="pt-seg pt-seg-text" id="pt-setup-theme" role="radiogroup"><span class="pt-seg-ind"></span><button type="button" role="radio" data-v="dark">Dark</button><button type="button" role="radio" data-v="light">Light</button></span></label>
+      <label class="pt-field"><span>Accent</span><span class="pt-field-color"><input type="color" id="pt-setup-accent" aria-label="Accent color" /><input type="text" id="pt-setup-accent-txt" spellcheck="false" aria-label="Accent color value" /></span></label>
+      <label class="pt-field"><span>Notes live in</span>
+        <span class="pt-seg pt-seg-text" id="pt-setup-store" role="radiogroup"><span class="pt-seg-ind"></span><button type="button" role="radio" data-v="local">This browser</button><button type="button" role="radio" data-v="bridge">A file (bridge)</button></span></label>
+      <label class="pt-field pt-field-bridge" id="pt-setup-bridge-row" hidden><span>Bridge URL</span><input type="text" id="pt-setup-bridge" spellcheck="false" placeholder="http://localhost:7331" /></label>
+      <p class="pt-sheet-note" id="pt-setup-bridge-note" hidden>Run <code>node infospector/server.mjs</code> in your project, then notes persist to <code>infospector-notes.json</code> where an agent can read them.</p>
+      <div class="pt-ctx-actions">
+        <button class="pt-mini pt-primary" id="pt-setup-start">Start</button>
+        <button class="pt-mini" id="pt-setup-copy" data-tip="Copy a config.js snippet so every browser starts this way">Copy config</button>
+        <button class="pt-mini" id="pt-setup-skip">Skip</button>
+      </div>
+    </div>
+  </div>
+  <div id="pt-doctor" class="pt-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="pt-doctor-title">
+    <div class="pt-sheet-card">
+      <h2 id="pt-doctor-title">Setup check</h2>
+      <ul class="pt-doc-list" id="pt-doctor-list"></ul>
+      <div class="pt-ctx-actions"><button class="pt-mini pt-primary" id="pt-doctor-again">Run again</button><button class="pt-mini" id="pt-doctor-copy">Copy report</button><button class="pt-mini" id="pt-doctor-close">Close</button></div>
+    </div>
+  </div>
   <div id="pt-toast"></div>
   <input type="file" id="pt-import-input" accept="application/json,.json" hidden />
 

@@ -845,7 +845,103 @@ function resetToDefaults() {
   const d = userDefaults(); state.glass = d.glass; state.bg = d.bg; applyGlass(); applyBg(); toast('Reset to defaults');
 }
 function saveAsDefaults() { try { localStorage.setItem(DEFAULTS_KEY, JSON.stringify({ glass: state.glass, bg: state.bg })); toast('Saved as your defaults'); } catch (e) { toast('Could not save'); } }
-function configSnippet() { return 'window.INFOSPECTOR_DEFAULTS = ' + JSON.stringify({ glass: state.glass, bg: state.bg }, null, 2) + ';'; }
+const HOME_KEY = 'pt:home', BRIDGE_KEY = 'pt:bridge', SETUP_KEY = 'pt:setup';
+const savedHome = () => { try { return localStorage.getItem(HOME_KEY) || ''; } catch (e) { return ''; } };
+const savedBridge = () => { try { return localStorage.getItem(BRIDGE_KEY) || ''; } catch (e) { return ''; } };
+function configSnippet() {
+  const lines = [];
+  const home = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' ? window.INFOSPECTOR_HOME : '');
+  const bridge = savedBridge() || (typeof window.INFOSPECTOR_BRIDGE === 'string' ? window.INFOSPECTOR_BRIDGE : '');
+  if (home) lines.push('window.INFOSPECTOR_HOME = ' + JSON.stringify(home) + ';');
+  if (bridge) lines.push('window.INFOSPECTOR_BRIDGE = ' + JSON.stringify(bridge) + ';');
+  lines.push('window.INFOSPECTOR_DEFAULTS = ' + JSON.stringify({ glass: state.glass, bg: state.bg }, null, 2) + ';');
+  return lines.join('\n');
+}
+
+/* ---------------- first-run setup + doctor --------------------------- */
+
+function segPick(seg, value) {
+  const btns = [...seg.querySelectorAll('button')]; const i = Math.max(0, btns.findIndex((b) => b.dataset.v === value));
+  btns.forEach((b, k) => b.setAttribute('aria-checked', String(k === i)));
+  seg.style.setProperty('--i', i);
+}
+function openSetup() {
+  const box = $('pt-setup'); box.hidden = false;
+  const home = $('pt-setup-home'); home.value = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' && window.INFOSPECTOR_HOME) || '/';
+  segPick($('pt-setup-theme'), currentTheme());
+  const acc = getComputedStyle(document.documentElement).getPropertyValue('--pt-accent').trim();
+  $('pt-setup-accent').value = toHex(acc); $('pt-setup-accent-txt').value = formatColor(acc, colorFmt());
+  const bridge = savedBridge() || (typeof window.INFOSPECTOR_BRIDGE === 'string' ? window.INFOSPECTOR_BRIDGE : '');
+  segPick($('pt-setup-store'), bridge ? 'bridge' : 'local'); $('pt-setup-bridge').value = bridge; showBridgeRow(!!bridge);
+  setTimeout(() => home.focus(), 50);
+}
+function showBridgeRow(on) { $('pt-setup-bridge-row').hidden = !on; $('pt-setup-bridge-note').hidden = !on; if (on && !$('pt-setup-bridge').value) $('pt-setup-bridge').value = 'http://localhost:7331'; }
+function closeSetup() { $('pt-setup').hidden = true; try { localStorage.setItem(SETUP_KEY, '1'); } catch (e) { /* ignore */ } }
+async function applySetup() {
+  const home = $('pt-setup-home').value.trim();
+  try { if (home) localStorage.setItem(HOME_KEY, home); else localStorage.removeItem(HOME_KEY); } catch (e) { /* ignore */ }
+  const theme = $('pt-setup-theme').querySelector('[aria-checked="true"]').dataset.v; if (theme !== currentTheme()) setTheme(theme);
+  const acc = parseColor($('pt-setup-accent-txt').value) || $('pt-setup-accent').value; state.bg.accent = acc; applyBg();
+  const useBridge = $('pt-setup-store').querySelector('[aria-checked="true"]').dataset.v === 'bridge';
+  const bridge = useBridge ? $('pt-setup-bridge').value.trim() : '';
+  try { if (bridge) localStorage.setItem(BRIDGE_KEY, bridge); else localStorage.removeItem(BRIDGE_KEY); } catch (e) { /* ignore */ }
+  window.INFOSPECTOR_BRIDGE = bridge || undefined;
+  state.store = await resolveStore();
+  if (bridge && window.__infospector.store() !== 'file bridge') toast('Bridge not reachable — notes stay in this browser for now');
+  await switchPage(state.url);
+  closeSetup();
+  if (home && shortUrl(state.url) !== home && !getHistory().length) loadTarget(home);
+  toast('Ready');
+}
+async function runDoctor() {
+  const checks = [];
+  const add = (name, status, detail) => checks.push({ name, status, detail });   // status: ok | warn | fail
+  const served = /^https?:$/.test(location.protocol);
+  add('Served over http(s)', served ? 'ok' : 'fail', served ? location.origin : 'Opened from disk (file://) — the inspector needs a web server');
+  let same = false; try { same = new URL(state.url).origin === location.origin; } catch (e) { /* not a url */ }
+  add('Page is same-origin', same ? 'ok' : 'warn', same ? shortUrl(state.url) : 'Cross-origin pages are view-only (no inspector, no notes)');
+  const loaded = state.frameMode === 'full', blocked = state.frameMode === 'blocked';
+  add('Page loads in the stage', loaded ? 'ok' : blocked ? 'fail' : 'warn', loaded ? 'Loaded' : blocked ? 'Refused to be framed — allow frame-ancestors \'self\' / X-Frame-Options SAMEORIGIN' : 'Still loading or view-only');
+  let injected = false; try { injected = !!el.frame.contentWindow.__ptInspector; } catch (e) { /* cross-origin */ }
+  add('Inspector injected', injected ? 'ok' : 'warn', injected ? 'inspector.js is running inside the page' : 'Not running (cross-origin page, or a CSP blocking script-src \'self\')');
+  if (same) {
+    try {
+      const r = await fetch(state.url, { method: 'HEAD', cache: 'no-store' });
+      const xfo = r.headers.get('x-frame-options') || '', csp = r.headers.get('content-security-policy') || '';
+      const fa = (csp.match(/frame-ancestors([^;]*)/i) || [])[1] || '';
+      const bad = /deny/i.test(xfo) || /'none'/.test(fa);
+      add('Frame headers', bad ? 'fail' : 'ok', bad ? `Blocks framing: ${xfo ? 'X-Frame-Options: ' + xfo : ''} ${fa ? 'frame-ancestors' + fa : ''}`.trim() : (xfo || fa ? `${xfo ? 'X-Frame-Options: ' + xfo : ''} ${fa ? 'frame-ancestors' + fa : ''}`.trim() : 'No framing restrictions'));
+    } catch (e) { add('Frame headers', 'warn', 'Could not read headers'); }
+  }
+  add('config.js', typeof window.INFOSPECTOR_DEFAULTS === 'object' ? 'ok' : 'warn', typeof window.INFOSPECTOR_DEFAULTS === 'object' ? 'Loaded' : 'Not loaded (optional)');
+  add('pages.json', state.pages.length ? 'ok' : 'warn', state.pages.length ? `${state.pages.length} curated pages` : 'None (optional — sitemap and links fill in)');
+  add('Sitemap', (state.sitemap || []).length ? 'ok' : 'warn', (state.sitemap || []).length ? `${state.sitemap.length} pages from /sitemap.xml` : 'No sitemap found (optional)');
+  const disc = Object.keys(state.discovered || {}).length; add('Links learned', disc ? 'ok' : 'warn', disc ? `${disc} pages seen on loaded pages` : 'None yet — load a page');
+  const store = window.__infospector.store(); const wantBridge = !!(savedBridge() || window.INFOSPECTOR_BRIDGE);
+  add('Notes storage', store === 'file bridge' ? 'ok' : wantBridge ? 'fail' : 'ok', store === 'file bridge' ? 'File bridge reachable' : wantBridge ? 'Bridge configured but not reachable — is server.mjs running?' : 'This browser (localStorage)');
+  let shot = false; try { shot = (await fetch(PT_BASE + 'vendor/html-to-image.js', { method: 'HEAD' })).ok; } catch (e) { /* missing */ }
+  add('Screenshots', shot ? 'ok' : 'warn', shot ? 'vendor/html-to-image.js present' : 'vendor/html-to-image.js missing — screenshot button will be disabled');
+  return checks;
+}
+async function showDoctor() {
+  const box = $('pt-doctor'), list = $('pt-doctor-list'); box.hidden = false; list.innerHTML = '<li><span class="pt-doc-detail">Checking…</span></li>';
+  const checks = await runDoctor(); state.lastDoctor = checks;
+  list.innerHTML = '';
+  checks.forEach((c) => { const li = document.createElement('li'); li.className = 'pt-doc-' + c.status; li.innerHTML = `<span class="pt-doc-ico">${c.status === 'ok' ? '✓' : c.status === 'warn' ? '–' : '!'}</span><span><div class="pt-doc-name"></div><div class="pt-doc-detail"></div></span>`; li.querySelector('.pt-doc-name').textContent = c.name; li.querySelector('.pt-doc-detail').textContent = c.detail; list.appendChild(li); });
+}
+function bindSetup() {
+  $('pt-setup-theme').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) segPick($('pt-setup-theme'), b.dataset.v); });
+  $('pt-setup-store').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; segPick($('pt-setup-store'), b.dataset.v); showBridgeRow(b.dataset.v === 'bridge'); });
+  $('pt-setup-accent').addEventListener('input', () => { $('pt-setup-accent-txt').value = formatColor($('pt-setup-accent').value, colorFmt()); });
+  $('pt-setup-accent-txt').addEventListener('change', () => { const v = parseColor($('pt-setup-accent-txt').value); if (v) $('pt-setup-accent').value = toHex(v); });
+  $('pt-setup-start').addEventListener('click', applySetup);
+  $('pt-setup-skip').addEventListener('click', closeSetup);
+  $('pt-setup-copy').addEventListener('click', () => copyText(configSnippet()));
+  $('pt-doctor-again').addEventListener('click', showDoctor);
+  $('pt-doctor-close').addEventListener('click', () => { $('pt-doctor').hidden = true; });
+  $('pt-doctor-copy').addEventListener('click', () => copyText((state.lastDoctor || []).map((c) => `${c.status === 'ok' ? '✓' : c.status === 'warn' ? '–' : '✗'} ${c.name}: ${c.detail}`).join('\n')));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!$('pt-doctor').hidden) $('pt-doctor').hidden = true; else if (!$('pt-setup').hidden) closeSetup(); } });
+}
 // slider tracks fill with the glass tint up to the thumb
 function updateSliderFills() {
   document.querySelectorAll('.pt-ctx-range input[type="range"]').forEach((inp) => {
@@ -1233,6 +1329,8 @@ function installRobotApi() {
     deleteNote: (id) => { const f = findNote(id); if (!f) return false; f.target.notes = f.target.notes.filter((n) => n.id !== id); if (!f.target.notes.length) { setRuler(f.target.anchor.selector, false); state.targets = state.targets.filter((x) => x.id !== f.target.id); closeModal(f.target.id); } persist(); return true; },
     setTargetRuler: (id, on) => { const t = state.targets.find((x) => x.id === id); if (!t) return false; t.ruler = !!on; setRuler(t.anchor.selector, t.ruler); persist(); return true; },
     openTarget: (id) => openModal(id, { reveal: true }),
+    doctor: runDoctor,                                  // -> Promise<[{ name, status: ok|warn|fail, detail }]>
+    openSetup, openDoctor: showDoctor,
     clearAll: () => { state.targets = []; [...state.activeRulers].forEach((s) => setRuler(s, false)); closeAllModals(); persist(); return true; },
     exportJSON: () => JSON.stringify(docForSave(), null, 2),
     allNotesText: () => allNotesText(),   // the same block "Copy all notes" puts on the clipboard
@@ -1344,12 +1442,18 @@ async function boot() {
   if (ds.fill) enterFill();
   else setSize(ds.w, ds.h, { animate: false, shape: ds.shape || null, custom: !!ds.custom });
   installRobotApi();
+  bindSetup();
+  if (!window.INFOSPECTOR_BRIDGE && savedBridge()) window.INFOSPECTOR_BRIDGE = savedBridge();   // chosen in first-run setup
   state.store = await resolveStore();
   await loadManifest();
   // open: ?url → the page you were last looking at → configured home → this origin's homepage
-  let target = getHistory()[0] || (typeof window.INFOSPECTOR_HOME === 'string' && window.INFOSPECTOR_HOME) || DEFAULT_HOME;
-  try { const p = new URLSearchParams(location.search).get('url'); if (p) target = p; } catch (e) { /* ignore */ }
+  let target = getHistory()[0] || savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' && window.INFOSPECTOR_HOME) || DEFAULT_HOME;
+  const params = new URLSearchParams(location.search);
+  if (params.get('url')) target = params.get('url');
   loadTarget(target);
+  let done = false; try { done = !!localStorage.getItem(SETUP_KEY); } catch (e) { done = true; }
+  if (params.has('setup') || !done) openSetup();
+  if (params.has('doctor')) setTimeout(showDoctor, 1500);
 }
 
 boot();

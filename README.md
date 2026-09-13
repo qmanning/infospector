@@ -37,29 +37,55 @@ it remembers the last size you were using.
 
 ## Install
 
-Copy the `infospector/` folder into a directory your app serves statically (for a Next.js app
-that's `public/`, so it ends up at `/labs/infospector/`). Then open:
+Infospector is one folder of static files. It has to be served **from the same origin as the pages
+you want to review** (that's what lets it read the page's DOM), so it lives inside your project's
+static/public directory.
+
+**1. Put the folder in your static directory**
+
+| framework | put it at | then open |
+| --- | --- | --- |
+| Next.js, Vite, Create React App, Nuxt, Remix, Rails, Laravel | `public/labs/infospector/` | `/labs/infospector/` |
+| Astro | `public/labs/infospector/` | `/labs/infospector/` |
+| SvelteKit | `static/labs/infospector/` | `/labs/infospector/` |
+| Hugo / Jekyll / Eleventy | `static/labs/infospector/` (or the passthrough dir) | `/labs/infospector/` |
+| Django | your `STATICFILES_DIRS` folder, then `collectstatic` | `/static/labs/infospector/` |
+| WordPress | `wp-content/infospector/` | `/wp-content/infospector/` |
+| plain HTML | anywhere your server serves | that path |
+
+`labs/` is just a convention — any path works. Don't put it in a route that's authenticated
+differently from your pages.
+
+**2. Open it and follow the first-run setup**
+
+Open the folder's `index.html` in the browser (e.g. `http://localhost:3000/labs/infospector/`).
+A small **Set up** card asks for your default page, theme, accent, and where notes live — or
+**Skip**. Reopen it any time with `?setup`; get a full self-check with `?doctor`.
+
+**3. Check the frame headers** (only if the stage says "This page can't be framed")
+
+Your pages must allow being framed by their own origin. Either header below is fine; `DENY` /
+`'none'` is not:
 
 ```
-/labs/infospector/index.html
+X-Frame-Options: SAMEORIGIN
+Content-Security-Policy: frame-ancestors 'self'
 ```
 
-It opens your project's homepage by default. Search a page in the toolbar, paste a URL, or
-deep-link one:
+That's it. Nothing to build, no dependencies, and deleting the folder removes it completely.
 
-```
-/labs/infospector/index.html?url=/your/page
-```
-
-Not served from a project (opened from disk)? It falls back to `https://qmanning.com` as a demo.
+**Installing with an AI assistant?** Point it at [`INSTALL.md`](./INSTALL.md) — it's written as a
+checklist an agent can follow (detect the framework, copy, verify with `?doctor`, ask the
+questions that matter, write `config.js`).
 
 ### Configuration
 
 | how | what |
 | --- | --- |
 | `?url=/path` | page to open |
+| `?setup` / `?doctor` | reopen first-run setup / run the self-check |
 | `?bridge=http://localhost:7331` | use the file bridge (see below) |
-| `window.INFOSPECTOR_HOME = "/path"` | default page (set in a tiny inline `<script>` before `host.js`) |
+| `window.INFOSPECTOR_HOME = "/path"` | default page (in `config.js`) |
 | `window.INFOSPECTOR_BRIDGE = "http://…"` | default bridge URL |
 | `pages.json` (next to `index.html`) | curated list of pages for the search box — `[{ "title", "path", "type" }]` |
 | `window.INFOSPECTOR_PAGES = [...]` in `config.js` | same shape, for projects that generate the list |
@@ -196,6 +222,7 @@ Shift+click an element for a copy-ready identity block.
 
 | file | purpose |
 | --- | --- |
+| `INSTALL.md` | step-by-step install checklist written for an AI assistant to follow |
 | `index.html` | the host page (floating toolbar + stage) |
 | `host.css` / `host.js` | UI, sizing, presets, typeahead + history, theme, screenshot, notes, robot API |
 | `inspector.js` | injected into the framed page: element picking, pins, rulers, reveal |
