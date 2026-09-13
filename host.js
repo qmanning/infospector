@@ -307,9 +307,11 @@ function bindHandles() {
         // a hand-dragged size is a custom size: keep the inline inputs live, browser-shaped corners
         setSize(startW + dw, startH + dh, { animate: false, custom: true });
       };
-      const up = () => { try { handle.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ } dragging = false; handle.classList.remove('pt-dragging'); el.stage.classList.remove('pt-edge-hover'); handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); };
+      const up = () => { try { handle.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ } dragging = false; handle.classList.remove('pt-dragging'); el.stage.classList.remove('pt-edge-hover'); handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); handle.removeEventListener('pointercancel', up); handle.removeEventListener('lostpointercapture', up); };
       handle.addEventListener('pointermove', move);
       handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', up);        // a cancelled/interrupted capture must still clear the outline
+      handle.addEventListener('lostpointercapture', up);   // capture yanked away (focus change etc.) → treat as done
     });
   });
 }
@@ -421,6 +423,20 @@ function hideSelbox() {
   const sel = state.selected; hidePop(el.selbox, { attr: true }); state.selPinned = false; postToFrame({ type: 'clearSelection' });
   if (sel && sel.anchor && sel.anchor.selector) { const t = findTargetBySelector(sel.anchor.selector); if (!t || !t.ruler) setRuler(sel.anchor.selector, false); }
   state.selected = null;
+}
+// Esc escape hatch: leave Inspect/peek, deselect everything, and close every transient popover, menu, sheet and open note.
+function escapeAll() {
+  closeDim(); hidePop(el.results); el.omni.blur(); hidePop(el.menuPop); closeCtx();
+  const keys = $('pt-keys-pop'); if (keys.classList.contains('pt-open')) hidePop(keys);
+  el.gaps.innerHTML = ''; el.stage.classList.remove('pt-edge-hover'); el.tip.hidden = true;
+  const doc = $('pt-doctor'), setup = $('pt-setup');
+  if (!doc.hidden) doc.hidden = true;
+  if (!setup.hidden) closeSetup();
+  selectGuide(null);
+  hideSelbox();
+  hideOpenModals();
+  setPeek(false);
+  if (state.mode === 'inspect') setInspect(false);
 }
 function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
@@ -1241,7 +1257,7 @@ function bindRulersAndBg() {
   el.rulerTop.addEventListener('pointerdown', (e) => startGuideFromRuler('y', e));
   el.rulerLeft.addEventListener('pointerdown', (e) => startGuideFromRuler('x', e));
   document.addEventListener('keyup', (e) => { if (e.key === 'Shift') setPeek(false); });
-  window.addEventListener('blur', () => setPeek(false));   // (a click into the page deselects via the frame's frameDown message)
+  window.addEventListener('blur', () => { setPeek(false); el.stage.classList.remove('pt-edge-hover'); });   // losing focus also drops a lingering resize outline (a click into the page deselects via the frame's frameDown message)
   document.addEventListener('keydown', (e) => {
     if (isInspectShortcut(e)) { e.preventDefault(); toggleInspectShortcut(); return; }   // ⇧⌘I
     if (isSearchShortcut(e)) { e.preventDefault(); focusSearch(); return; }              // ⌘K
@@ -1251,14 +1267,15 @@ function bindRulersAndBg() {
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
     if (e.key === '?') { e.preventDefault(); toggleKeys(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedGuide) { e.preventDefault(); deleteGuide(state.selectedGuide); }
-    else if (e.key === 'Escape') { selectGuide(null); closeCtx(); if (state.selected) hideSelbox(); }   // Esc also deselects (no × in the design)
+    else if (e.key === 'Escape') escapeAll();   // Esc is the escape hatch: out of every mode, every popup closed
   });
   // clicking the empty background deselects; right-clicking it opens the pattern menu
   document.addEventListener('pointerdown', (e) => {
     const t = e.target && e.target.closest ? e.target : document.body;
+    if (!t.closest('.pt-handle, .pt-edge') && !document.querySelector('.pt-handle.pt-dragging')) el.stage.classList.remove('pt-edge-hover');   // a press anywhere but the resize edge kills a lingering resize outline
     if (state.selectedGuide && !t.closest('.pt-guide, #pt-gbox, #pt-confirm, .pt-modal')) selectGuide(null);
-    // a press on the canvas (not on a note, the toolbar, a menu, the Item Info box or the guide menu) hides open notes
-    if (!t.closest('.pt-modal, #pt-selbox, #pt-gbox, #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, #pt-confirm, .pt-sheet, #pt-gaps, #pt-keys-btn, #pt-tip')) hideOpenModals();
+    // a press on the canvas (not on a note, the toolbar, a menu, the Item Info box or the guide menu) hides open notes and deselects the element
+    if (!t.closest('.pt-modal, #pt-selbox, #pt-gbox, #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, #pt-confirm, .pt-sheet, #pt-gaps, #pt-keys-btn, #pt-tip')) { hideOpenModals(); if (state.selected) hideSelbox(); }
   }, true);
   el.stagewrap.addEventListener('contextmenu', (e) => { if (e.target !== el.stagewrap) return; e.preventDefault(); openCtx(e.clientX, e.clientY); });
   document.addEventListener('pointerdown', (e) => { if (!el.ctx.hidden && !el.ctx.contains(e.target)) closeCtx(); }, true);
