@@ -1275,7 +1275,7 @@ function bindRulersAndBg() {
     if (!t.closest('.pt-handle, .pt-edge') && !document.querySelector('.pt-handle.pt-dragging')) el.stage.classList.remove('pt-edge-hover');   // a press anywhere but the resize edge kills a lingering resize outline
     if (state.selectedGuide && !t.closest('.pt-guide, #pt-gbox, #pt-confirm, .pt-modal')) selectGuide(null);
     // a press on the canvas (not on a note, the toolbar, a menu, the Item Info box or the guide menu) hides open notes and deselects the element
-    if (!t.closest('.pt-modal, #pt-selbox, #pt-gbox, #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, #pt-confirm, .pt-sheet, #pt-gaps, #pt-keys-btn, #pt-tip')) { hideOpenModals(); if (state.selected) hideSelbox(); }
+    if (!t.closest('.pt-modal, #pt-selbox, #pt-gbox, #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, #pt-confirm, .pt-sheet, #pt-gaps, #pt-keys-btn, #pt-tip')) { hideOpenModals(); if (state.selected && !t.closest('.pt-guide, .pt-ruler, #pt-ruler-corner')) hideSelbox(); }   // …but not a press on a guide or a ruler: wrap guides belong to the selection and would vanish under the click
   }, true);
   el.stagewrap.addEventListener('contextmenu', (e) => { if (e.target !== el.stagewrap) return; e.preventDefault(); openCtx(e.clientX, e.clientY); });
   document.addEventListener('pointerdown', (e) => { if (!el.ctx.hidden && !el.ctx.contains(e.target)) closeCtx(); }, true);
