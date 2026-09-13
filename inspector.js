@@ -128,7 +128,7 @@
   var markers = [];     // last render set
   var selectedEl = null;
   var revealed = {};    // selector -> [{node, prevCss, hadHidden}]
-  var rulers = {};      // selector -> { nodes:[...] }
+  var rulers = {};      // selector -> true (wrapped by host guides)
 
   var style = document.createElement('style');
   style.textContent =
@@ -137,9 +137,6 @@
     '.pt-pin-layer{position:fixed;inset:0;pointer-events:none;z-index:2147482500;}' +
     '.pt-pin{position:absolute;min-width:22px;height:22px;padding:0 5px;margin:-11px 0 0 -11px;border-radius:11px;background:#6b7280;box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer;pointer-events:auto;display:grid;place-items:center;border:2px solid #fff;color:#fff;font:700 11px -apple-system,system-ui,sans-serif;}' +
     '.pt-pin.pt-focus{outline:3px solid rgba(79,140,255,.5);outline-offset:2px;}' +
-    '.pt-ruler{position:fixed;left:0;top:0;pointer-events:none;z-index:2147482200;}' +   /* left/top: a fixed box with auto offsets sits at its static position (end of body) */
-    '.pt-ruler .pt-rl{position:absolute;background:#f0a83c;}' +
-    '.pt-ruler .pt-rlabel{position:absolute;background:#f0a83c;color:#1a1200;font:700 10px -apple-system,system-ui,sans-serif;padding:1px 4px;border-radius:3px;white-space:nowrap;transform:translate(-50%,-50%);}' +
     /* shift+drag area selection (marquee while dragging, dotted outline once selected / saved) */
     '.pt-marq{position:fixed;pointer-events:none;z-index:2147481300;border:2px dotted #ffd83d;background:rgba(255,216,61,.10);border-radius:2px;display:none;}' +
     '.pt-region-sel{position:fixed;pointer-events:none;z-index:2147481250;border:2px dotted #ffd83d;border-radius:2px;display:none;}' +
@@ -408,33 +405,16 @@
     }
   }
 
-  // ---------- ruler wrap ---------------------------------------------------
-
-  function makeRuler(selector) {
+  // ---------- ruler wrap: the host snaps its red guides to the element's edges ----------
+  // we only measure; the host owns the guides. Re-measured on scroll/resize so they follow.
+  function measureRuler(selector) {
     var el = null; try { el = document.querySelector(selector); } catch (e) {}
-    if (!el) return null;
-    var r = el.getBoundingClientRect();
-    var cont = document.createElement('div'); cont.className = 'pt-ruler'; cont.setAttribute('data-pt-overlay', '');
-    var GAP = 8, T = 2, TICK = 10;
-    var bar = function (x, y, w, h) { var d = document.createElement('div'); d.className = 'pt-rl'; d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.width = w + 'px'; d.style.height = h + 'px'; cont.appendChild(d); };
-    var label = function (text, x, y) { var d = document.createElement('div'); d.className = 'pt-rlabel'; d.textContent = text; d.style.left = x + 'px'; d.style.top = y + 'px'; cont.appendChild(d); };
-    var wTxt = Math.round(r.width) + 'px', hTxt = Math.round(r.height) + 'px';
-    // a dimension line on every edge: width above and below, height left and right, ticks at the ends
-    var yTop = r.top - GAP, yBot = r.bottom + GAP - T, xLeft = r.left - GAP, xRight = r.right + GAP - T;
-    bar(r.left, yTop, r.width, T);  bar(r.left, yTop - 4, T, TICK);  bar(r.right - T, yTop - 4, T, TICK);  label(wTxt, r.left + r.width / 2, yTop - 8);
-    bar(r.left, yBot, r.width, T);  bar(r.left, yBot - 4, T, TICK);  bar(r.right - T, yBot - 4, T, TICK);  label(wTxt, r.left + r.width / 2, yBot + 10);
-    bar(xLeft, r.top, T, r.height); bar(xLeft - 4, r.top, TICK, T);  bar(xLeft - 4, r.bottom - T, TICK, T); label(hTxt, xLeft - 10, r.top + r.height / 2);
-    bar(xRight, r.top, T, r.height); bar(xRight - 4, r.top, TICK, T); bar(xRight - 4, r.bottom - T, TICK, T); label(hTxt, xRight + 12, r.top + r.height / 2);
-    document.body.appendChild(cont);
-    return { el: el, cont: cont };
-  }
-  function drawRuler(selector) {
-    if (rulers[selector]) { rulers[selector].cont.remove(); delete rulers[selector]; }
-    var made = makeRuler(selector); if (made) rulers[selector] = made;
+    if (!el) return;
+    send('rulerRect', { selector: selector, rect: roundRect(el.getBoundingClientRect()) });
   }
   function setRuler(selector, on) {
-    if (on) drawRuler(selector);
-    else if (rulers[selector]) { rulers[selector].cont.remove(); delete rulers[selector]; }
+    if (on) { rulers[selector] = true; measureRuler(selector); }
+    else delete rulers[selector];
   }
 
   // ---------- reposition ---------------------------------------------------
@@ -445,7 +425,7 @@
     if (selectedEl && document.body.contains(selectedEl)) { var er = selectedEl.getBoundingClientRect(); place(sel, er); send('selectionMoved', { rect: roundRect(er) }); }
     else if (selectedRegion) { var rr = { left: selectedRegion.x - window.scrollX, top: selectedRegion.y - window.scrollY, width: selectedRegion.w, height: selectedRegion.h }; place(regionSel, rr); send('selectionMoved', { rect: { x: rr.left, y: rr.top, width: rr.width, height: rr.height } }); }
     else if (selectedEls.length) { drawMulti(); var mu = unionRect(selectedEls); send('selectionMoved', { rect: roundRect(mu) }); }
-    for (var s in rulers) drawRuler(s);
+    for (var s in rulers) measureRuler(s);
   }
 
   window.addEventListener('message', function (e) {

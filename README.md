@@ -11,8 +11,8 @@ rounded-bottom for a browser window, fully rounded for a phone, tablet, or watch
 Turn on **Inspect** (button or **⇧⌘I**) — the page's own clicks are swallowed, the cursor becomes
 a crosshair, and red **rulers** appear along the top and left (drag a guide out of a ruler; click
 a guide and press Delete to remove it). Click any element to **select** it: a bar floats just above
-it with its size, name, z-index, id and selector, plus buttons to **Add Note** or wrap it in
-**dimension rulers**. **Shift+drag** to select an *area* instead — the note records every element
+it with its size, name, z-index, id and selector, plus buttons to **Add Note** or **Ruler wrap** it —
+four guides snapped to its edges. **Shift+drag** to select an *area* instead — the note records every element
 the box touches, so an assistant knows where to look. Each object can
 hold **multiple notes**, living in a **draggable frosted modal** whose **marker stays pinned to
 the element** through resizes and reflows. Clicking a marker on a hidden element (a closed menu,
