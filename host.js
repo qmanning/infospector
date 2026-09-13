@@ -16,6 +16,16 @@ import { resolveStore, emptyDoc } from './adapters.js';
  * Phone/Pixel entries are the newest models known at authoring time — edit freely.
  */
 const BROWSER_R = 10;
+import * as L from './lib.js';
+const { radiusCss, STATES, STATE_COLORS, LEGACY_STATES, normState, tickSteps, hslOf, forTheme, lumOf, mixCss, contrast, hsbToHex, formatColor, humanize, isUrlish, toHex, rgbOf } = L;
+const migrate = (doc) => L.migrate(doc, uid);
+const parseColor = (str) => L.parseColor(str, (v) => !!(window.CSS && CSS.supports('color', v)));
+const shortUrl = (u) => L.shortUrl(u, location.origin);
+const pagePath = (href) => L.pagePath(href, { origin: location.origin, base: PT_BASE });
+const allPages = () => L.mergePages(state.pages, state.sitemap, state.discovered);
+// named colors, color-mix(), etc. resolve through a canvas when we're in a browser
+L.setColorFallback((css) => { try { const c = document.createElement('canvas').getContext('2d'); c.fillStyle = '#000000'; c.fillStyle = css; const v = c.fillStyle; const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(v); return v[0] === '#' ? L.parseRgb(v) : m ? { r: +m[1], g: +m[2], b: +m[3], a: m[4] != null ? +m[4] : 1 } : null; } catch (e) { return null; } });
+
 const PRESETS = [
   { w: 1920, h: 1080, name: 'HD', shape: 'browser', r: BROWSER_R },
   { w: 1878, h: 2670, name: 'iPhone Duo Inner', shape: 'device', r: 44 },
@@ -38,18 +48,7 @@ const PRESETS = [
   { w: 410, h: 502, name: 'Apple Watch Ultra', shape: 'device', r: 90 }
 ];
 const BROWSER_SHAPE = { shape: 'browser', r: BROWSER_R };
-// rulers on: the left edge (top-left + bottom-left) squares off to meet the vertical ruler
-function radiusCss(shape, s, rulers) {
-  const r = Math.round(shape.r * s * 10) / 10;
-  if (shape.shape !== 'device') return rulers ? `0 0 ${r}px 0` : `0 0 ${r}px ${r}px`;
-  return rulers ? `0 ${r}px ${r}px 0` : `${r}px`;
-}
 
-// note lifecycle: open (yellow) → noted by the assistant (purple) → done (green)
-const STATES = ['open', 'noted', 'done'];
-const STATE_COLORS = { open: '#ffd83d', noted: '#a259ff', done: '#46c17b' };
-const LEGACY_STATES = { reviewed: 'noted', working: 'noted', complete: 'done' };
-function normState(s) { return STATES.includes(s) ? s : (LEGACY_STATES[s] || 'open'); }
 const PT_BASE = location.pathname.replace(/[^/]*$/, '');
 // page to open on launch: ?url=…, else window.INFOSPECTOR_HOME, else this origin's homepage,
 // else (not served over http, e.g. opened from disk) the demo site
@@ -281,7 +280,6 @@ function toggleTheme() { setTheme(currentTheme() === 'light' ? 'dark' : 'light')
 function getHistory() { try { const a = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function pushHistory(url) { try { let a = getHistory().filter((u) => u !== url); a.unshift(url); a = a.slice(0, HISTORY_MAX); localStorage.setItem(HISTORY_KEY, JSON.stringify(a)); } catch (e) { /* ignore */ } }
 function displayUrl(u) { return u; }   // the URL bar shows the full address of the page on stage
-function shortUrl(u) { try { const x = new URL(u); return x.origin === location.origin ? (x.pathname + x.search) || '/' : u; } catch (e) { return u; } }
 
 /* ---------------- corner resize -------------------------------------- */
 
@@ -429,21 +427,6 @@ function findTargetBySelector(selector) { if (!selector) return null; return sta
 function findTargetByMulti(multi) { const k = JSON.stringify(multi); return state.targets.find((t) => t.anchor && t.anchor.multi && JSON.stringify(t.anchor.multi) === k) || null; }
 function findTargetByRegion(region) { const k = JSON.stringify(region); return state.targets.find((t) => t.anchor && t.anchor.region && JSON.stringify(t.anchor.region) === k) || null; }
 function findNote(noteId) { for (const t of state.targets) { const n = t.notes.find((x) => x.id === noteId); if (n) return { target: t, note: n }; } return null; }
-
-function migrate(doc) {
-  let out = doc;
-  if (!Array.isArray(doc.targets)) {   // v1: flat notes → one target per element
-    out = { version: 2, pageKey: doc.pageKey, targets: [] };
-    if (Array.isArray(doc.notes)) doc.notes.forEach((n) => {
-      const selr = (n.anchor && n.anchor.selector) || (n.element && n.element.selectors && n.element.selectors[0]) || uid('sel');
-      let t = out.targets.find((x) => x.anchor.selector === selr);
-      if (!t) { t = { id: uid('t'), createdAt: n.createdAt, updatedAt: n.updatedAt, anchor: n.anchor || { selector: selr }, element: n.element || {}, ruler: false, modal: { x: null, y: null, open: false }, notes: [] }; out.targets.push(t); }
-      t.notes.push({ id: n.id || uid('n'), text: n.text || '', state: n.state, createdAt: n.createdAt, updatedAt: n.updatedAt });
-    });
-  }
-  out.targets.forEach((t) => t.notes.forEach((n) => { n.state = normState(n.state); }));   // old 4-state names → 3
-  return out;
-}
 // what gets written: drafts (unsaved new notes) are left out, and objects with nothing saved vanish
 function docForSave() {
   const doc = emptyDoc(state.pageKey);
@@ -519,16 +502,26 @@ function setReveal(selector, on) { if (selector) postToFrame({ type: 'reveal', s
 // selector so they move together, follow the element, and go away when the wrap is turned off
 function setRuler(selector, on) {
   if (!selector) return;
-  if (on) state.activeRulers.add(selector); else { state.activeRulers.delete(selector); wrapGuides(selector, null); }
+  if (on) { state.activeRulers.add(selector); state.wrapPending = selector; } else { state.activeRulers.delete(selector); wrapGuides(selector, null); }
   postToFrame({ type: 'ruler', selector, on });   // on: the frame answers with rulerRect
 }
-function wrapGuides(selector, rect) {
-  state.guides = state.guides.filter((g) => g.for !== selector);
-  if (rect) {
-    const add = (axis, pos) => state.guides.push({ id: uid('g'), axis, pos: Math.round(pos), for: selector });
-    add('y', rect.y); add('y', rect.y + rect.height); add('x', rect.x); add('x', rect.x + rect.width);
-  }
+// each wrap guide remembers its edge; a re-measure moves the survivors and never resurrects one
+// the user deleted or dragged away. rect = null removes the set.
+function wrapGuides(selector, rect, { create = false } = {}) {
+  const edges = rect ? { top: ['y', rect.y], bottom: ['y', rect.y + rect.height], left: ['x', rect.x], right: ['x', rect.x + rect.width] } : {};
+  const mine = state.guides.filter((g) => g.for === selector);
+  if (!rect) state.guides = state.guides.filter((g) => g.for !== selector);
+  else if (create || !mine.length) {
+    state.guides = state.guides.filter((g) => g.for !== selector);
+    Object.entries(edges).forEach(([edge, [axis, pos]]) => state.guides.push({ id: uid('g'), axis, pos: Math.round(pos), for: selector, edge }));
+  } else mine.forEach((g) => { const e = edges[g.edge]; if (e) g.pos = Math.round(e[1]); });
   saveGuides(); renderGuides();
+}
+// a wrap guide that's deleted or dragged leaves the set; when none are left the wrap is over
+function detachGuide(gd) {
+  if (!gd.for) return;
+  const selector = gd.for; delete gd.for; delete gd.edge;
+  if (!state.guides.some((g) => g.for === selector)) { state.activeRulers.delete(selector); postToFrame({ type: 'ruler', selector, on: false }); const t = findTargetBySelector(selector); if (t && t.ruler) { t.ruler = false; save(); } }
 }
 // Ruler wrap always (re)snaps four guides to the element; the guides themselves are how you remove them
 function wrapSelected() {
@@ -732,13 +725,6 @@ function setRulers(on) {
   requestAnimationFrame(fit);   // re-applies the squared corners + redraws
 }
 
-// tick spacing so minor ticks are ≥6px and labeled ticks ≥60px on screen, at any zoom
-function tickSteps(s) {
-  const steps = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000];
-  const minor = steps.find((v) => v * s >= 6) || 2000;
-  const major = steps.find((v) => v * s >= 60 && v % minor === 0) || minor * 10;
-  return { minor, major };
-}
 
 function drawRulers() {
   if (!state.rulers) return;
@@ -803,7 +789,7 @@ function positionGuides() {
   });
   placeGbox();
 }
-function selectGuide(id) { state.selectedGuide = id; positionGuides(); }
+function selectGuide(id) { state.selectedGuide = id; if (id && document.activeElement === el.frame) el.frame.blur(); positionGuides(); }   // keys (Delete) must reach the host, not the page
 // the purple menu next to the selected guide's label
 function placeGbox() {
   const box = $('pt-gbox'); const gd = state.guides.find((g) => g.id === state.selectedGuide);
@@ -819,6 +805,7 @@ async function deleteGuide(id) {
   const t = findTargetByGuide(id);
   if (t && t.notes.filter((x) => !x._draft).length) { const ok = await askConfirm(`Delete this guide and its ${t.notes.length} note${t.notes.length === 1 ? '' : 's'}?`); if (!ok) return; }
   if (t) { closeModal(t.id); state.targets = state.targets.filter((x) => x.id !== t.id); persist(); }
+  const gd = state.guides.find((g) => g.id === id); if (gd) detachGuide(gd);
   state.guides = state.guides.filter((g) => g.id !== id); if (state.selectedGuide === id) state.selectedGuide = null; saveGuides(); renderGuides();
 }
 async function deleteAllGuides() {
@@ -890,7 +877,7 @@ function dragGuide(gd, e, node) {
     ((state.snap && state.snap[gd.axis]) || []).forEach((ln) => { const d = Math.abs(ln.pos - pos); if (d <= tol && (!best || d < best.d)) best = { d, pos: ln.pos, snap: { selector: ln.selector, edge: ln.edge } }; });
     state.guides.forEach((o) => { if (o.id === gd.id || o.axis !== gd.axis) return; const d = Math.abs(o.pos - pos); if (d <= tol && (!best || d < best.d)) best = { d, pos: o.pos, snap: { guide: o.id } }; });
     if (best) { pos = best.pos; gd.snap = best.snap; } else gd.snap = null;
-    gd.pos = pos; delete gd.for;   // a hand-moved guide no longer belongs to a wrap
+    gd.pos = pos; detachGuide(gd);   // a hand-moved guide no longer belongs to a wrap
     positionGuides();
   };
   const up = (ev) => {
@@ -915,29 +902,6 @@ function startGuideFromRuler(axis, e) {
 const BG_KEY = 'pt:bg', DEFAULTS_KEY = 'pt:defaults';
 const BG_BASE = { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null, accent: null };
 const GLASS_BASE = { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null };
-// ---- theme-aware colors: a color picked in one theme keeps its hue in the other, re-lit for contrast ----
-function hslOf(css) {
-  const { r, g, b } = rgbOf(css); const rn = r / 255, gn = g / 255, bn = b / 255, max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn), d = max - min;
-  let h = 0; if (d) { h = max === rn ? ((gn - bn) / d) % 6 : max === gn ? (bn - rn) / d + 2 : (rn - gn) / d + 4; h = Math.round(h * 60); if (h < 0) h += 360; }
-  const l = (max + min) / 2, s2 = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
-  return { h, s: Math.round(s2 * 100), l: Math.round(l * 100) };
-}
-function forTheme(css, pickedTheme, theme) {
-  if (!css || !pickedTheme || pickedTheme === theme) return css;
-  const { h, s: sat, l } = hslOf(css);
-  return theme === 'dark' ? `hsl(${h}, ${Math.min(sat, 70)}%, ${Math.min(l, 14)}%)` : `hsl(${h}, ${Math.min(sat, 70)}%, ${Math.max(l, 90)}%)`;
-}
-// relative luminance of any css color (0 = black, 1 = white)
-function lumOf(css) {
-  const hex = toHex(css); const lin = (h) => { const c = parseInt(h, 16) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-  return 0.2126 * lin(hex.slice(1, 3)) + 0.7152 * lin(hex.slice(3, 5)) + 0.0722 * lin(hex.slice(5, 7));
-}
-// sRGB mix of two css colors (t = share of b), as hex
-function mixCss(a, b, t) {
-  const A = rgbOf(a), B = rgbOf(b), ch = (x, y) => Math.round(x + (y - x) * t).toString(16).padStart(2, '0');
-  return '#' + ch(A.r, B.r) + ch(A.g, B.g) + ch(A.b, B.b);
-}
-const contrast = (a, b) => { const x = lumOf(a), y = lumOf(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
 // UI ink by formula, not by theme: estimate the glass surface (ground ← tint at its opacity ←
 // backing) and take whichever of black/white contrasts more with it (WCAG). Labels and section
 // headers are that ink at 90%, faint text at 65%.
@@ -1113,44 +1077,8 @@ function loadBg() {
   applyBg();
 }
 // ---- color helpers: chips need hex; the text field takes hex / rgb() / hsl() / hsb() ----
-function toHex(css) {
-  const c = document.createElement('canvas').getContext('2d'); c.fillStyle = '#000000'; c.fillStyle = css;
-  const v = c.fillStyle; if (v[0] === '#') return v;
-  const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)/.exec(v);
-  return m ? '#' + [m[1], m[2], m[3]].map((x) => Math.round(+x).toString(16).padStart(2, '0')).join('') : '#000000';
-}
-function hsbToHex(h, s, b) {
-  s /= 100; b /= 100; const k = (n) => (n + h / 60) % 6; const f = (n) => b * (1 - s * Math.max(0, Math.min(k(n), 4 - k(n), 1)));
-  return '#' + [f(5), f(3), f(1)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
-}
-function parseColor(str) {
-  str = (str || '').trim(); if (!str) return null;
-  const m = /^hs[bv]\(\s*([\d.]+)[,\s]+([\d.]+)%?[,\s]+([\d.]+)%?\s*\)$/i.exec(str);
-  if (m) return hsbToHex(+m[1], +m[2], +m[3]);
-  if (/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(str)) str = '#' + str;
-  return (window.CSS && CSS.supports('color', str)) ? str : null;
-}
 // ---- color formats: fields display in the chosen notation; input still accepts any ----
 const FMT_KEY = 'pt:colorfmt';
-function rgbOf(css) {
-  const c = document.createElement('canvas').getContext('2d'); c.fillStyle = '#000000'; c.fillStyle = css; const v = c.fillStyle;
-  if (v[0] === '#') return { r: parseInt(v.slice(1, 3), 16), g: parseInt(v.slice(3, 5), 16), b: parseInt(v.slice(5, 7), 16), a: 1 };
-  const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(v);
-  return m ? { r: +m[1], g: +m[2], b: +m[3], a: m[4] != null ? +m[4] : 1 } : { r: 0, g: 0, b: 0, a: 1 };
-}
-function formatColor(css, fmt) {
-  const { r, g, b, a } = rgbOf(css);
-  const h2 = (x) => Math.round(x).toString(16).padStart(2, '0');
-  if (fmt === 'rgb') return a < 1 ? `rgba(${r}, ${g}, ${b}, ${+a.toFixed(2)})` : `rgb(${r}, ${g}, ${b})`;
-  if (fmt === 'hsl' || fmt === 'hsb') {
-    const rn = r / 255, gn = g / 255, bn = b / 255, max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn), d = max - min;
-    let h = 0; if (d) { h = max === rn ? ((gn - bn) / d) % 6 : max === gn ? (bn - rn) / d + 2 : (rn - gn) / d + 4; h = Math.round(h * 60); if (h < 0) h += 360; }
-    if (fmt === 'hsb') return `hsb(${h}, ${Math.round((max ? d / max : 0) * 100)}, ${Math.round(max * 100)})`;
-    const l = (max + min) / 2, sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
-    return a < 1 ? `hsla(${h}, ${Math.round(sat * 100)}%, ${Math.round(l * 100)}%, ${+a.toFixed(2)})` : `hsl(${h}, ${Math.round(sat * 100)}%, ${Math.round(l * 100)}%)`;
-  }
-  return '#' + h2(r) + h2(g) + h2(b) + (a < 1 ? h2(a * 255) : '');
-}
 function colorFmt() { try { return localStorage.getItem(FMT_KEY) || 'hex'; } catch (e) { return 'hex'; } }
 
 function syncColorInputs() {
@@ -1266,7 +1194,7 @@ function bindRulersAndBg() {
   el.rulerTop.addEventListener('pointerdown', (e) => startGuideFromRuler('y', e));
   el.rulerLeft.addEventListener('pointerdown', (e) => startGuideFromRuler('x', e));
   document.addEventListener('keyup', (e) => { if (e.key === 'Shift') setPeek(false); });
-  window.addEventListener('blur', () => { setPeek(false); if (state.selectedGuide && document.activeElement === el.frame) selectGuide(null); });   // a click into the page deselects too
+  window.addEventListener('blur', () => setPeek(false));   // (a click into the page deselects via the frame's frameDown message)
   document.addEventListener('keydown', (e) => {
     if (isInspectShortcut(e)) { e.preventDefault(); toggleInspectShortcut(); return; }   // ⇧⌘I
     if (isSearchShortcut(e)) { e.preventDefault(); focusSearch(); return; }              // ⌘K
@@ -1321,16 +1249,6 @@ async function loadManifest() {
   try { state.discovered = JSON.parse(localStorage.getItem(DISCOVERED_KEY) || '{}') || {}; } catch (e) { state.discovered = {}; }
   loadSitemap();   // async; results appear when they arrive
 }
-const humanize = (path) => { const seg = path.replace(/\/+$/, '').split('/').pop() || 'Home'; return seg.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()); };
-function pagePath(href) {   // same-origin, page-like href → clean path, else null
-  try {
-    const u = new URL(href, location.origin);
-    if (u.origin !== location.origin || u.pathname.startsWith(PT_BASE)) return null;
-    if (/\.(png|jpe?g|gif|svg|webp|ico|css|js|json|xml|txt|pdf|zip|mp4|webm|woff2?)$/i.test(u.pathname)) return null;
-    if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/_next/')) return null;
-    return u.pathname.replace(/\/{2,}/g, '/');
-  } catch (e) { return null; }
-}
 function rememberPages(entries) {   // entries: [{ path, title }]
   let changed = false;
   entries.forEach(({ path, title }) => { if (!path) return; const cur = state.discovered[path]; if (!cur || (title && !cur.title)) { state.discovered[path] = { title: title || cur?.title || '' }; changed = true; } });
@@ -1356,17 +1274,6 @@ async function loadSitemap() {
   docs.forEach((d) => d.querySelectorAll('url > loc').forEach((l) => { const path = pagePath(l.textContent.trim()); if (path) entries.push({ path, title: '' }); }));
   state.sitemap = entries;
 }
-// merged, de-duped page list: curated first (in order), then everything else by path
-function allPages() {
-  const out = new Map();
-  state.pages.forEach((p) => { if (p && p.path && !out.has(p.path)) out.set(p.path, { title: p.title || humanize(p.path), path: p.path, type: p.type || 'page' }); });
-  const rest = [];
-  (state.sitemap || []).forEach((p) => { if (!out.has(p.path)) rest.push({ title: humanize(p.path), path: p.path, type: 'sitemap' }); });
-  Object.entries(state.discovered || {}).forEach(([path, v]) => { if (!out.has(path) && !rest.some((r) => r.path === path)) rest.push({ title: v.title || humanize(path), path, type: 'link' }); });
-  rest.sort((a, b) => a.path.localeCompare(b.path)).forEach((p) => out.set(p.path, p));
-  return [...out.values()];
-}
-function isUrlish(v) { return /^https?:\/\//i.test(v) || v.startsWith('/'); }
 function renderResults(q) {
   const typed = q.trim();
   const raw = typed === (state.url || '') ? '' : typed, query = raw.toLowerCase();   // the current page's own URL isn't a search
@@ -1587,7 +1494,7 @@ function bind() {
     else if (d.type === 'snapLines') state.snap = { x: d.x || [], y: d.y || [] };
     else if (d.type === 'gapHover') showGaps(d.x, d.y, d.mod);
     else if (d.type === 'frameDown') { if (state.selectedGuide) selectGuide(null); }   // a click into the page deselects the guide
-    else if (d.type === 'rulerRect') { if (state.activeRulers.has(d.selector)) wrapGuides(d.selector, d.rect); }   // element measured (or moved) → snap guides to its edges
+    else if (d.type === 'rulerRect') { if (state.activeRulers.has(d.selector)) wrapGuides(d.selector, d.rect, { create: !!state.wrapPending && state.wrapPending === d.selector }); if (state.wrapPending === d.selector) state.wrapPending = null; }   // element measured (or moved) → snap guides to its edges
     else if (d.type === 'toggleInspect') toggleInspectShortcut();   // ⇧⌘I pressed while the frame had focus
     else if (d.type === 'inspectOn') { if (state.mode !== 'inspect') setInspect(true); }   // shift+click while peeking locks that element in
     else if (d.type === 'focusSearch') focusSearch();               // ⌘K pressed while the frame had focus

@@ -236,6 +236,23 @@ Shift+click an element for a copy-ready identity block.
 | `pages.json` | optional page manifest for the search box |
 | `bookmarklet.js` | standalone shift+click inspector for any page |
 | `vendor/html-to-image.js` | enables the screenshot button ([html-to-image](https://github.com/bubkoo/html-to-image), MIT) |
+| `lib.js` | pure helpers (colors, pages, migration) shared by host.js and the unit tests |
+| `test/` | `unit/` (node --test), `e2e/` (Playwright), `serve.mjs` (zero-dep static server) |
+
+## Tests
+
+The tool itself has no dependencies; the tests do (Playwright, dev-only). From this folder:
+
+```bash
+npm install            # once: @playwright/test
+npx playwright install chromium
+npm test               # unit (node --test, pure helpers in lib.js) + e2e (real Chromium against welcome.html)
+```
+
+`npm run test:unit` is instant and dependency-free; `npm run test:e2e` starts `test/serve.mjs` on
+:7377 and drives the real UI: inspect, select, notes, ruler wrap, guide snapping, ⌘-hover gap
+notes, clear-all, shortcuts. Never run `npm install` inside a project's `public/` copy — run the
+tests from a clone of the repo.
 
 ## License
 
