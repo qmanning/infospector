@@ -19,8 +19,9 @@
  * The notes file is a map of { "<pageKey>": { version, pageKey, targets: [...] } }.
  * Edit it by hand or with an agent; the browser polls and picks up changes.
  *
- * It answers CORS `*` because it is a local dev helper bound to your machine;
- * don't expose it on a public interface.
+ * It answers CORS only for localhost/127.0.0.1/[::1] origins (echoed back, not `*`)
+ * because it is a local dev helper bound to your machine; don't expose it on a
+ * public interface.
  */
 import http from 'node:http';
 import { readFile, writeFile, stat } from 'node:fs/promises';
@@ -53,37 +54,52 @@ async function writeStore(store) {
 function emptyDoc(pageKey) { return { version: 2, pageKey, targets: [] }; }
 
 // ---- helpers -------------------------------------------------------------
-function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+function cors(res, req) {
+  const origin = req && req.headers && req.headers.origin;
+  if (origin) {
+    try {
+      const hostname = new URL(origin).hostname;
+      if (LOCAL_HOSTNAMES.has(hostname)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      }
+    } catch (e) { /* malformed Origin: send no ACAO */ }
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'content-type');
 }
-function json(res, code, body) {
-  cors(res);
+function json(res, code, body, req) {
+  cors(res, req);
   res.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store' });
   res.end(JSON.stringify(body));
 }
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', (c) => { data += c; if (data.length > 5e6) reject(new Error('too large')); });
+    req.on('data', (c) => { data += c; if (data.length > 5e6) { reject(new Error('too large')); req.destroy(); } });
     req.on('end', () => resolve(data));
     req.on('error', reject);
   });
 }
+
+// pageKeys become object-store keys; block prototype-pollution-prone values
+const UNSAFE_PAGE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 // ---- server --------------------------------------------------------------
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://localhost');
   const pageKey = u.searchParams.get('page') || '/';
 
-  if (req.method === 'OPTIONS') { cors(res); res.writeHead(204); res.end(); return; }
+  if (req.method === 'OPTIONS') { cors(res, req); res.writeHead(204); res.end(); return; }
 
   try {
-    if (u.pathname === '/health') { return json(res, 200, { ok: true, file: FILE }); }
+    if (UNSAFE_PAGE_KEYS.has(pageKey)) { return json(res, 400, { error: 'invalid page key' }, req); }
+
+    if (u.pathname === '/health') { return json(res, 200, { ok: true, file: FILE }, req); }
 
     if (u.pathname === '/rev') {
-      cors(res);
+      cors(res, req);
       let rev = '0';
       try { const s = await stat(FILE); rev = String(Math.round(s.mtimeMs)); } catch (e) { /* no file yet */ }
       res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
@@ -93,32 +109,32 @@ const server = http.createServer(async (req, res) => {
 
     if (u.pathname === '/notes' && req.method === 'GET') {
       const store = await readStore();
-      return json(res, 200, store[pageKey] || emptyDoc(pageKey));
+      return json(res, 200, store[pageKey] || emptyDoc(pageKey), req);
     }
 
     if (u.pathname === '/notes' && req.method === 'PUT') {
       const body = await readBody(req);
       let doc;
-      try { doc = JSON.parse(body); } catch (e) { return json(res, 400, { error: 'invalid JSON' }); }
-      if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return json(res, 400, { error: 'expected a doc object' });
+      try { doc = JSON.parse(body); } catch (e) { return json(res, 400, { error: 'invalid JSON' }, req); }
+      if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return json(res, 400, { error: 'expected a doc object' }, req);
       const store = await readStore();
       doc.pageKey = pageKey;
       store[pageKey] = doc;
       await writeStore(store);
-      return json(res, 200, { ok: true, targets: Array.isArray(doc.targets) ? doc.targets.length : 0 });
+      return json(res, 200, { ok: true, targets: Array.isArray(doc.targets) ? doc.targets.length : 0 }, req);
     }
 
     if (u.pathname === '/') {
-      return json(res, 200, { name: 'infospector file bridge', file: FILE, endpoints: ['/health', '/notes?page=', '/rev?page='] });
+      return json(res, 200, { name: 'infospector file bridge', file: FILE, endpoints: ['/health', '/notes?page=', '/rev?page='] }, req);
     }
 
-    json(res, 404, { error: 'not found' });
+    json(res, 404, { error: 'not found' }, req);
   } catch (e) {
-    json(res, 500, { error: e.message });
+    json(res, 500, { error: e.message }, req);
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`[infospector] file bridge on http://localhost:${PORT}`);
   console.log(`[infospector] notes file: ${FILE}`);
   console.log(`[infospector] open: /labs/infospector/index.html?bridge=http://localhost:${PORT}&url=/`);

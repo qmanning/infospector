@@ -77,6 +77,7 @@ const ICONS = {
   trash: svg('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6M14 11v6"/>'),
   x: svg('<path d="M18 6 6 18M6 6l12 12"/>'),
   camera: svg('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>'),
+  inspectGlyph: '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M2 2V1C1.44772 1 1 1.44772 1 2H2ZM6 2H7C7 1.44772 6.55228 1 6 1V2ZM6 6V7C6.55228 7 7 6.55228 7 6H6ZM2 6H1C1 6.55228 1.44772 7 2 7V6ZM18 2V1C17.4477 1 17 1.44772 17 2H18ZM22 2H23C23 1.44772 22.5523 1 22 1V2ZM22 6V7C22.5523 7 23 6.55228 23 6H22ZM18 6H17C17 6.55228 17.4477 7 18 7V6ZM18 18V17C17.4477 17 17 17.4477 17 18H18ZM22 18H23C23 17.4477 22.5523 17 22 17V18ZM22 22V23C22.5523 23 23 22.5523 23 22H22ZM18 22H17C17 22.5523 17.4477 23 18 23V22ZM2 18V17C1.44772 17 1 17.4477 1 18H2ZM6 18H7C7 17.4477 6.55228 17 6 17V18ZM6 22V23C6.55228 23 7 22.5523 7 22H6ZM2 22H1C1 22.5523 1.44772 23 2 23V22ZM14.2071 12.7929C13.8166 12.4024 13.1834 12.4024 12.7929 12.7929C12.4024 13.1834 12.4024 13.8166 12.7929 14.2071L13.5 13.5L14.2071 12.7929ZM14.7929 16.2071C15.1834 16.5976 15.8166 16.5976 16.2071 16.2071C16.5976 15.8166 16.5976 15.1834 16.2071 14.7929L15.5 15.5L14.7929 16.2071ZM6 4V5H18.5V4V3H6V4ZM20 6H19V18H20H21V6H20ZM18 20V19H6V20V21H18V20ZM4 17.5H5V6H4H3V17.5H4ZM2 2V3H6V2V1H2V2ZM6 2H5V6H6H7V2H6ZM6 6V5H2V6V7H6V6ZM2 6H3V2H2H1V6H2ZM18 2V3H22V2V1H18V2ZM22 2H21V6H22H23V2H22ZM22 6V5H18V6V7H22V6ZM18 6H19V2H18H17V6H18ZM18 18V19H22V18V17H18V18ZM22 18H21V22H22H23V18H22ZM22 22V21H18V22V23H22V22ZM18 22H19V18H18H17V22H18ZM2 18V19H6V18V17H2V18ZM6 18H5V22H6H7V18H6ZM6 22V21H2V22V23H6V22ZM2 22H3V18H2H1V22H2ZM14 11H13C13 12.1046 12.1046 13 11 13V14V15C13.2091 15 15 13.2091 15 11H14ZM11 14V13C9.89543 13 9 12.1046 9 11H8H7C7 13.2091 8.79086 15 11 15V14ZM8 11H9C9 9.89543 9.89543 9 11 9V8V7C8.79086 7 7 8.79086 7 11H8ZM11 8V9C12.1046 9 13 9.89543 13 11H14H15C15 8.79086 13.2091 7 11 7V8ZM13.5 13.5L12.7929 14.2071L14.7929 16.2071L15.5 15.5L16.2071 14.7929L14.2071 12.7929L13.5 13.5Z"/></svg>',   // official Infospector glyph
   vectorSquare: svg('<path d="M19.5 7a24 24 0 0 1 0 10"/><path d="M4.5 7a24 24 0 0 0 0 10"/><path d="M7 19.5a24 24 0 0 0 10 0"/><path d="M7 4.5a24 24 0 0 1 10 0"/><rect x="17" y="17" width="5" height="5" rx="1"/><rect x="17" y="2" width="5" height="5" rx="1"/><rect x="2" y="17" width="5" height="5" rx="1"/><rect x="2" y="2" width="5" height="5" rx="1"/>'),   // Lucide vector-square: the Inspect icon
   dots: svg('<circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="12" r="1.4"/>')
 };
@@ -979,8 +980,9 @@ function resetToDefaults() {
 }
 function saveAsDefaults() { try { localStorage.setItem(DEFAULTS_KEY, JSON.stringify({ glass: state.glass, bg: state.bg })); toast('Saved as your defaults'); } catch (e) { toast('Could not save'); } }
 const HOME_KEY = 'pt:home', BRIDGE_KEY = 'pt:bridge', SETUP_KEY = 'pt:setup', START_SIZE_KEY = 'pt:startsize';
-// start-up size: 'fit' (Fit to Window — the default, so the stage always fits), 'last' (whatever you used last), or 'WxH' of a preset
-const startSize = () => { try { return localStorage.getItem(START_SIZE_KEY) || (typeof window.INFOSPECTOR_START_SIZE === 'string' ? window.INFOSPECTOR_START_SIZE : '') || 'fit'; } catch (e) { return 'fit'; } };
+// start-up size: 'last' (the default — whatever you used last; 1024×768 the very first time), 'fit' (Fit to Window), or 'WxH' of a preset
+const FIRST_SIZE = { w: 1024, h: 768 };
+const startSize = () => { try { return localStorage.getItem(START_SIZE_KEY) || (typeof window.INFOSPECTOR_START_SIZE === 'string' ? window.INFOSPECTOR_START_SIZE : '') || 'last'; } catch (e) { return 'last'; } };
 function syncStartInputs() {
   const sel = $('pt-start-size'); if (!sel) return;
   if (!sel.options.length) {
@@ -988,7 +990,7 @@ function syncStartInputs() {
     add('fit', 'Fit to Window'); add('last', 'Last used');
     PRESETS.forEach((p) => add(p.w + 'x' + p.h, `${p.w} × ${p.h}${p.name ? ' · ' + p.name : ''}`));
   }
-  sel.value = startSize(); if (sel.value !== startSize()) sel.value = 'fit';
+  sel.value = startSize(); if (sel.value !== startSize()) sel.value = 'last';
   const pg = $('pt-start-page'); if (pg && document.activeElement !== pg) pg.value = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' ? window.INFOSPECTOR_HOME : '');
 }
 const savedHome = () => { try { return localStorage.getItem(HOME_KEY) || ''; } catch (e) { return ''; } };
@@ -998,7 +1000,7 @@ function configSnippet() {
   const home = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' ? window.INFOSPECTOR_HOME : '');
   const bridge = savedBridge() || (typeof window.INFOSPECTOR_BRIDGE === 'string' ? window.INFOSPECTOR_BRIDGE : '');
   if (home) lines.push('window.INFOSPECTOR_HOME = ' + JSON.stringify(home) + ';');
-  if (startSize() !== 'fit') lines.push('window.INFOSPECTOR_START_SIZE = ' + JSON.stringify(startSize()) + ';   // "fit" | "last" | "1280x960"');
+  if (startSize() !== 'last') lines.push('window.INFOSPECTOR_START_SIZE = ' + JSON.stringify(startSize()) + ';   // "last" | "fit" | "1024x768"');
   if (bridge) lines.push('window.INFOSPECTOR_BRIDGE = ' + JSON.stringify(bridge) + ';');
   lines.push('window.INFOSPECTOR_DEFAULTS = ' + JSON.stringify({ glass: state.glass, bg: state.bg }, null, 2) + ';');
   return lines.join('\n');
@@ -1506,7 +1508,7 @@ function bindTips() {
 }
 
 function bind() {
-  el.rotate.innerHTML = ICONS.arrowLeftRight; el.inspect.innerHTML = ICONS.vectorSquare; el.shot.innerHTML = ICONS.camera;
+  el.rotate.innerHTML = ICONS.arrowLeftRight; el.inspect.innerHTML = ICONS.inspectGlyph; el.shot.innerHTML = ICONS.camera;
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
   el.apReset.innerHTML = ICONS.rotateCcw;
   $('pt-g-note').innerHTML = ICONS.notebookPen; $('pt-g-del').innerHTML = ICONS.trash; $('pt-g-clear').innerHTML = ICONS.shredder;
@@ -1601,14 +1603,15 @@ function bind() {
 /* ---------------- boot ----------------------------------------------- */
 
 // last size the user was looking at, else the largest size the viewport shows unscaled
-function defaultSize() { try { const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null'); if (s && s.w && s.h) return s; } catch (e) { /* ignore */ } const a = availArea(); return { w: a.w, h: a.h, fill: false, custom: false, shape: BROWSER_SHAPE }; }
+// last size used in this browser; the very first time, the 1024×768 preset
+function defaultSize() { try { const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null'); if (s && s.w && s.h) return s; } catch (e) { /* ignore */ } const p = PRESETS.find((x) => x.w === FIRST_SIZE.w && x.h === FIRST_SIZE.h); return { w: FIRST_SIZE.w, h: FIRST_SIZE.h, fill: false, custom: false, shape: p ? { shape: p.shape, r: p.r } : BROWSER_SHAPE }; }
 
 async function boot() {
   // taken before anything below writes pt:* keys (size, theme, glass, history all persist during boot)
   let untouched = false; try { untouched = !Object.keys(localStorage).some((k) => k.startsWith('pt:')); } catch (e) { untouched = false; }
   buildDimPop();
   bind();
-  // start-up size (right-click → Start-up): fit by default, so the stage always fits the window
+  // start-up size (right-click → Start-up): last used by default; 1024×768 on a fresh browser
   const ss = startSize(), preset = /^(\d+)x(\d+)$/.exec(ss);
   if (ss === 'last') { const ds = defaultSize(); if (ds.fill) enterFill(); else setSize(ds.w, ds.h, { animate: false, shape: ds.shape || null, custom: !!ds.custom }); }
   else if (preset) { const p = PRESETS.find((x) => x.w === +preset[1] && x.h === +preset[2]); setSize(+preset[1], +preset[2], { animate: false, shape: p ? { shape: p.shape, r: p.r } : null }); }
@@ -1621,7 +1624,10 @@ async function boot() {
   // open: ?url → the page you were last looking at → configured home → this origin's homepage
   let target = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' && window.INFOSPECTOR_HOME) || getHistory()[0] || DEFAULT_HOME;
   const params = new URLSearchParams(location.search);
-  if (params.get('url')) target = params.get('url');
+  if (params.get('url')) {
+    const qsUrl = resolveUrl(params.get('url'));
+    if (qsUrl) { try { if (new URL(qsUrl).origin === location.origin) target = qsUrl; } catch (e) { /* ignore */ } }
+  }
   loadTarget(target);
   // First-run setup shows once, and only when this really is a first run: no flag, no other
   // Infospector state in this browser, and nothing configured in config.js. An installed copy with

@@ -104,7 +104,14 @@ export async function resolveStore() {
   var bridge = null;
   try {
     var params = new URLSearchParams(location.search);
-    bridge = params.get('bridge') || (typeof window !== 'undefined' && (window.INFOSPECTOR_BRIDGE || window.PT_BRIDGE)) || null;
+    var qsBridge = params.get('bridge');
+    if (qsBridge) {
+      try {
+        var h = new URL(qsBridge, location.href).hostname;
+        if (h !== 'localhost' && h !== '127.0.0.1' && h !== '[::1]') qsBridge = null;
+      } catch (e) { qsBridge = null; }
+    }
+    bridge = qsBridge || (typeof window !== 'undefined' && (window.INFOSPECTOR_BRIDGE || window.PT_BRIDGE)) || null;
   } catch (e) { /* ignore */ }
 
   if (bridge) {

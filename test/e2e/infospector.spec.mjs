@@ -5,7 +5,8 @@ const MOD = process.platform === 'darwin' ? 'Meta' : 'Control';
 
 test.beforeEach(async ({ page }) => {
   // skip the first-run card; every test starts with a clean browser context anyway
-  await page.addInitScript(() => { try { localStorage.setItem('pt:setup', '1'); } catch (e) { /* ignore */ } });
+  // tests assume a fit-to-window stage, independent of the product default
+  await page.addInitScript(() => { try { localStorage.setItem('pt:setup', '1'); localStorage.setItem('pt:startsize', 'fit'); } catch (e) { /* ignore */ } });
   await page.goto('/index.html');
   await expect(page.locator('#pt-omni-input')).toHaveValue(/welcome\.html$/);
   await page.frameLocator('#pt-frame').locator('h1').waitFor();

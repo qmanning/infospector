@@ -13,8 +13,8 @@ http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (p.endsWith('/')) p += 'index.html';
   const file = path.normalize(path.join(root, p));
-  if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end('not found'); return; }
+  if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end('not found'); return; }
   res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store', 'x-frame-options': 'SAMEORIGIN' });
   if (req.method === 'HEAD') { res.end(); return; }
   fs.createReadStream(file).pipe(res);
-}).listen(port, () => console.log(`infospector: http://localhost:${port}/`));
+}).listen(port, '127.0.0.1', () => console.log(`infospector: http://localhost:${port}/`));
