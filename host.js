@@ -1621,7 +1621,10 @@ async function boot() {
   // open: ?url → the page you were last looking at → configured home → this origin's homepage
   let target = savedHome() || (typeof window.INFOSPECTOR_HOME === 'string' && window.INFOSPECTOR_HOME) || getHistory()[0] || DEFAULT_HOME;
   const params = new URLSearchParams(location.search);
-  if (params.get('url')) target = params.get('url');
+  if (params.get('url')) {
+    const qsUrl = resolveUrl(params.get('url'));
+    if (qsUrl) { try { if (new URL(qsUrl).origin === location.origin) target = qsUrl; } catch (e) { /* ignore */ } }
+  }
   loadTarget(target);
   // First-run setup shows once, and only when this really is a first run: no flag, no other
   // Infospector state in this browser, and nothing configured in config.js. An installed copy with
