@@ -9,7 +9,7 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ### Added
 - Infospector now wears its own mark: the **official glyph** is the Inspect button's icon (and the demo tile's), replacing the stand-in.
-- A fresh browser opens the stage at **1024 × 768**. Resize it once and Infospector remembers your size from then on.
+- A fresh browser opens the stage at **1024 × 768**. Resize it once and Infospector remembers your size from then on. An install's `config.js` (`INFOSPECTOR_START_SIZE`) still overrides both.
 
 ### Security
 - The notes bridge server binds to `127.0.0.1` only, never all interfaces.
