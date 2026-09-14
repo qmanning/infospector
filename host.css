@@ -361,14 +361,14 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
   padding: 8px 16px 8px 8px; border-radius: 16px;   /* concentric: 8px inset + 1px border → r7 inner controls */
   transition: left 90ms ease-out, top 90ms ease-out;
   border: 1px solid rgba(162, 217, 255, 0.25);
-  background: linear-gradient(0deg, rgba(0, 157, 255, 0.35), rgba(0, 157, 255, 0.35)), rgba(0, 0, 0, 0.25);
+  background: linear-gradient(0deg, rgba(0, 157, 255, 0.35), rgba(0, 157, 255, 0.35)), rgba(6, 11, 20, 0.92);   /* opaque-dark base: the box keeps its dark-mode look over a light or dark page */
   box-shadow: 0 0 16px 0 rgba(0, 0, 0, 0.14), -2px -2px 4px 0 rgba(0, 0, 0, 0.50) inset, 1px 1px 1px 0 rgba(255, 255, 255, 0.55) inset;
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   color: #fff; overflow: hidden;
 }
 #pt-selbox.pt-region {   /* area selection keeps the yellow language */
   border-color: rgba(255, 216, 61, 0.40);
-  background: linear-gradient(0deg, rgba(255, 216, 61, 0.26), rgba(255, 216, 61, 0.26)), rgba(0, 0, 0, 0.25);
+  background: linear-gradient(0deg, rgba(255, 216, 61, 0.26), rgba(255, 216, 61, 0.26)), rgba(6, 11, 20, 0.92);
 }
 .pt-sb-inner { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; opacity: 0.9; }
 /* name on its own line, selector on the next — a long name must never push the selector out */
