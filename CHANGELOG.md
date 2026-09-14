@@ -5,14 +5,21 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-14
+
+### Added
+- Infospector now wears its own mark: the **official glyph** is the Inspect button's icon (and the demo tile's), replacing the stand-in.
+- A fresh browser opens the stage at **1024 × 768**. Resize it once and Infospector remembers your size from then on.
+
 ### Security
-- Bridge server binds to 127.0.0.1 only, not all interfaces.
-- Bridge CORS now allowlists localhost/127.0.0.1/[::1] origins instead of `*`.
-- `?bridge=` param is only honored when it points at a localhost host.
-- `?url=` param is ignored when it resolves to a different origin.
+- The notes bridge server binds to `127.0.0.1` only, never all interfaces.
+- Bridge CORS allowlists `localhost` / `127.0.0.1` / `[::1]` origins instead of `*`.
+- `?bridge=` is honored only when it points at a localhost host; `?url=` is ignored unless it resolves to the same origin.
 
 ### Fixed
-- Test static server's path-containment check no longer matches sibling dirs with the same prefix.
+- The bundled test server's path-containment check no longer matches sibling directories that share a name prefix.
+
+## [0.4.0] — 2026-09-13
 
 ### Added
 - **Rotate** button (left of Inspect, `arrow-left-right`): swaps the stage's width and height — landscape ↔ portrait. It changes the size only; the canvas never turns.
