@@ -1,44 +1,23 @@
-# Infospector
+# Infospector — Site Notes
 
-A tiny, framework-agnostic **visual review tool** you drop into any web project.
+**A drop-in tool to review any page, leave notes, resize the canvas, take screen captures, draw rulers, and get info on any element — so your AI always knows the right thing to work on.**
 
-Load one of your pages into a centered, resizable **stage** — pick a device size from a list
-(phones, tablets, watches, desktop viewports), type a custom size, or drag the stage corners. If the
-size is bigger than your window it scales down to fit, with an orange border and a glowing size
-control so you know you're zoomed. The stage even wears the right **corners**: flat-top /
-rounded-bottom for a browser window, fully rounded for a phone, tablet, or watch.
+![Infospector reviewing a page, with rulers and an element's Item Info box](docs/hero.png)
 
-Turn on **Inspect** (button or **⇧⌘I**) — the page's own clicks are swallowed, the cursor becomes
-a crosshair, and **rulers** appear along the top and left. Drag a **guide** out of a ruler: it
-snaps to element edges (and remembers which). Click a guide for its menu — leave a **note on the
-guide**, delete it, or delete all. Hold **⌘/Ctrl** between two guides to read the distance, and
-click that readout to leave a note on that **space**. Click any element to **select** it: a bar floats just above
-it with its size, name, z-index, id and selector, plus buttons to **Add Note** or **Ruler wrap** it —
-four guides snapped to its edges. **Shift+drag** to select an *area* instead — the note records every element
-the box touches, so an assistant knows where to look. Each object can
-hold **multiple notes**, living in a **draggable frosted modal** whose **marker stays pinned to
-the element** through resizes and reflows. Clicking a marker on a hidden element (a closed menu,
-say) temporarily **reveals** it. Every note captures the element's identity — a unique CSS
-selector, the React component chain if present, `data-testid`, box metrics — so an AI coding
-assistant knows *exactly* which element you mean.
+Load any page from your site into a resizable **stage**, point at exactly what you mean, and hand your coding assistant a precise, structured note — the element's selector, component chain, size and your comment — instead of a vague "fix the thing near the header." One folder of static files, no build, no dependencies.
 
-A note is a draft until you **Save** it (⌘↩); **Cancel** discards a new one or reverts edits, and
-nothing is written behind your back. Notes carry a **state** — **open** (yellow) → **noted**
-(purple, the assistant has seen it) → **done** (green) — and an agent flips those as it works,
-live in the browser or by editing the notes file. A marker is colored by its least-finished note
-and shows a count, so it stays yellow until every note on that object is done.
+## What it does
 
-Also: a **light/dark** toggle, a page **search box with history** (⌘K), screenshots (⇧⌥⌘Space grabs
-the screen exactly as it is — open menus, tooltips and notes included), a keyboard
-button under the stage that lists every **shortcut** (or press `?`), and it remembers the last
-size you were using. On a fresh install the stage opens a bundled **welcome page** that walks
-through the workflow and gives you things to click.
-
-- **Zero build, zero dependencies** for the core (plain HTML/CSS/JS; frosted glass is native
-  `backdrop-filter`; icons are inline [Lucide](https://lucide.dev) SVGs).
-- **No lock-in**: notes live in `localStorage` by default; an optional file bridge persists them
-  to a JSON file on disk.
-- **MIT licensed.**
+- **Review at any size.** Drop your page onto a centered stage and switch between phones, tablets, watches and desktop viewports, type a custom size, drag the corners, or rotate landscape ↔ portrait. Oversized views scale to fit.
+- **Leave notes an AI can act on.** Click an element and add a note. Every note captures a unique CSS selector, the React component chain, `data-testid` and box metrics — so an assistant knows *exactly* which element you mean.
+- **Inspect anything.** Turn on Inspect (**⇧⌘I**) and the page's own clicks are held back while a floating panel shows any element's size, name, id, z-index and selector — each field one click to copy.
+- **Draw rulers and guides.** Rulers run along the top and left; drag out guides that snap to element edges, and wrap any element in four guides at once.
+- **Measure the gaps.** Hold **⌘/Ctrl** between two guides to read the distance, then click to leave a note on that space.
+- **Select an area or many elements.** Shift+drag a box to note a whole region (it records every element it touches); ⇧⌘-click to note several at once.
+- **Capture the screen.** One shortcut grabs the stage exactly as it is — open menus, tooltips and notes included.
+- **Track progress.** Notes carry a state — **open → noted → done** — and your assistant flips them as it works, live or by editing the notes file. Markers stay colored until every note is done.
+- **Light or dark, searchable, keyboard-driven.** A theme toggle, a page search with history (**⌘K**), and a shortcuts panel (`?`). It opens at 1024 × 768 the first time and remembers your size after that.
+- **Yours, everywhere.** Zero build, zero dependencies for the core; notes live in `localStorage` or an optional on-disk JSON file. **MIT licensed.**
 
 ## Install
 
