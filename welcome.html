@@ -30,6 +30,8 @@
   button { font: inherit; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   footer { margin-top: 48px; color: var(--dim); font-size: 13px; }
+  footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  footer a:hover { text-decoration: underline; }
   a { color: var(--accent); }
 </style>
 </head>
@@ -41,7 +43,7 @@
   <ol class="steps">
     <li><div><b>Load a page</b><p>Press <kbd>⌘K</kbd> (or click the search box), pick a page, or paste any URL from your site. Pages from your sitemap and links it has seen appear automatically.</p></div></li>
     <li><div><b>Pick a size</b><p>The size button (top-left) lists phones, tablets and desktops; choose <em>Custom</em> to type one, or drag a corner of the stage. An orange ring means the stage is scaled to fit — the percentage says how much.</p></div></li>
-    <li><div><b>Turn on Inspect</b><p>Press <kbd>⇧⌘I</kbd> or the Inspect button (the vector-square icon). Clicks on the page are swallowed; hover shows an element's size, name and selector; rulers appear (drag guides out of them). Hold <kbd>Shift</kbd> any time to peek — and <kbd>Shift</kbd>+click something to lock it in.</p></div></li>
+    <li><div><b>Turn on Inspect</b><p>Press <kbd>⇧⌘I</kbd> or the Inspect button. Clicks on the page are swallowed; hover shows an element's size, name and selector; rulers appear (drag guides out of them). Hold <kbd>Shift</kbd> any time to peek — and <kbd>Shift</kbd>+click something to lock it in.</p></div></li>
     <li><div><b>Leave a note</b><p>Click an element, then <em>Add note</em>. Notes live in draggable cards with a marker pinned to the element. <kbd>Shift</kbd>+drag selects an area; <kbd>⇧⌘</kbd>+click builds a multi-selection.</p></div></li>
     <li><div><b>Hand it to an assistant</b><p>Every note carries a unique selector, the component chain and box metrics. The notes button (top-right) copies them all as text; with the file bridge running they land in a JSON file an agent can read and mark as done.</p></div></li>
   </ol>
@@ -56,9 +58,9 @@
   <div class="btns"><button class="primary">A primary button</button><button>A secondary button</button></div>
 
   <h2>Make it yours</h2>
-  <p>Right-click the background outside the stage for patterns, colors and the glass look. Add <code>?setup</code> to the URL to redo the first-run setup, <code>?doctor</code> to check the install. The keyboard button under the stage lists every shortcut.</p>
+  <p>Right-click the background outside the stage for patterns, colors and the glass look. Add <code>?setup</code> to the URL to redo the first-run setup, <code>?doctor</code> to check the install. The keyboard button under the stage — or <kbd>?</kbd> — lists every shortcut.</p>
 
-  <footer>Infospector is MIT-licensed. Nothing here phones home; notes stay in your browser unless you point them at the file bridge.</footer>
+  <footer>Infospector is MIT-licensed. Nothing here phones home; notes stay in your browser unless you point them at the file bridge.<br><a href="https://qmanning.com/labs/infospector" target="_blank" rel="noopener">Infospector on qmanning.com&#8202;/&#8202;labs&nbsp;&rarr;</a></footer>
 </main>
 </body>
 </html>
