@@ -5,6 +5,11 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-09-14
+
+### Fixed
+- The **Item Info** panel now keeps its dark, high-contrast look over any page — a light page behind it used to bleed through the glass and wash the text out. It reads the same whether the page you're reviewing is light or dark.
+
 ## [0.5.0] — 2026-09-14
 
 ### Added
@@ -89,7 +94,8 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 First working version: device stage, select-first inspection, notes with element identity, rulers and guides, screenshots, file bridge, robot API.
 
-[Unreleased]: https://github.com/qmanning/infospector/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/qmanning/infospector/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/qmanning/infospector/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/qmanning/infospector/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/qmanning/infospector/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/qmanning/infospector/compare/v0.3.0...v0.3.1
