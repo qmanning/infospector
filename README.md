@@ -262,3 +262,7 @@ tests from a clone of the repo.
 ## License
 
 MIT © 2026 Q Manning. See [LICENSE](./LICENSE).
+
+---
+
+Made by [Q Manning](https://qmanning.com) · [Source on GitHub](https://github.com/qmanning/infospector) · [See it live in the Labs](https://qmanning.com/labs/infospector)
