@@ -134,6 +134,7 @@
 
   <!-- right-click menu for the background -->
   <div id="pt-ctx" hidden>
+    <button type="button" id="pt-ctx-close" aria-label="Close" data-tip="Close"></button>
     <div class="pt-ctx-title">Background</div>
     <div class="pt-seg" id="pt-bg-seg" role="radiogroup" aria-label="Background pattern">
       <span class="pt-seg-ind"></span>
@@ -161,7 +162,7 @@
 
   <div class="pt-menu-pop pt-ap-pop" id="pt-ap-pop" role="menu" aria-label="Material &amp; Light">
     <div class="pt-ctx-title">Material &amp; Light</div>
-    <label class="pt-ctx-range" data-tip="How round the glass panels are (the toolbar keeps its own shape)"><span>Radius</span><input type="range" id="pt-ap-radius" min="0" max="40" step="1" /><output id="pt-ap-radius-val"></output></label>
+    <label class="pt-ctx-range" data-tip="How round the glass panels are (the toolbar keeps its own shape)"><span>Radius</span><input type="range" id="pt-ap-radius" min="0" max="60" step="1" /><output id="pt-ap-radius-val"></output></label>
     <label class="pt-ctx-range" data-tip="Padding inside the toolbar and menus — the inner corners stay concentric"><span>Padding</span><input type="range" id="pt-ap-pad" min="0" max="20" step="1" /><output id="pt-ap-pad-val"></output></label>
     <label class="pt-ctx-range"><span>Blur</span><input type="range" id="pt-ap-blur" min="0" max="100" step="1" /><output id="pt-ap-blur-val"></output></label>
     <label class="pt-ctx-range"><span>Saturation</span><input type="range" id="pt-ap-sat" min="100" max="250" step="5" /><output id="pt-ap-sat-val"></output></label>

@@ -100,7 +100,7 @@ const el = {
   gaps: $('pt-gaps'), rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
   colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), colAccent: $('pt-col-accent'), colAccentTxt: $('pt-col-accent-txt'),
-  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'), apToggle: $('pt-ap-toggle'), apPop: $('pt-ap-pop'),
+  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'), apToggle: $('pt-ap-toggle'), apPop: $('pt-ap-pop'), ctxClose: $('pt-ctx-close'),
   apBlur: $('pt-ap-blur'), apBacking: $('pt-ap-backing'), apSat: $('pt-ap-sat'), apLight: $('pt-ap-light'), apDark: $('pt-ap-dark'), apTint: $('pt-ap-tint'), apColor: $('pt-ap-color'), apColorTxt: $('pt-ap-color-txt'), apReset: $('pt-ap-reset'),
   apShine: $('pt-ap-shine'), apShade: $('pt-ap-shade'), apLightAngle: $('pt-ap-lightangle'), apRadius: $('pt-ap-radius'), apPad: $('pt-ap-pad'),
   modals: $('pt-modals'), toast: $('pt-toast')
@@ -1167,7 +1167,7 @@ function syncColorInputs() {
 /* ---------------- appearance (the glass recipe's dials) ---------------- */
 
 const GLASS_KEY = 'pt:glass';
-const GLASS_DEFAULTS = { blur: 8, sat: 150, tint: 14, color: '#bbbbbc', backing: 35, shine: 0, shade: 0, lightAngle: 145, radius: 18, pad: 6 };   // light/dark reflex defaults come from the theme
+const GLASS_DEFAULTS = { blur: 8, sat: 150, tint: 14, color: '#bbbbbc', backing: 35, shine: 0, shade: 0, lightAngle: 145, radius: 40, pad: 8 };   // light/dark reflex defaults come from the theme
 
 function applyGlass() {
   const g = state.glass, root = document.documentElement.style;
@@ -1570,6 +1570,7 @@ function bind() {
   // a ghosted Infospector glyph tops every empty/message overlay on the stage
   document.querySelectorAll('.pt-overlay > div').forEach((d) => d.insertAdjacentHTML('afterbegin', `<span class="pt-overlay-glyph" aria-hidden="true">${ICONS.inspectGlyph}</span>`));
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
+  el.ctxClose.innerHTML = ICONS.x; el.ctxClose.addEventListener('click', closeCtx);   // ✕ in the context panel's corner
   el.apReset.innerHTML = ICONS.rotateCcw;
   $('pt-g-note').innerHTML = ICONS.notebookPen; $('pt-g-del').innerHTML = ICONS.trash; $('pt-g-clear').innerHTML = ICONS.shredder;
   $('pt-keys-btn').innerHTML = ICONS.keyboard; buildKeysList();

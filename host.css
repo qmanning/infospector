@@ -46,9 +46,9 @@
   /* concentric geometry: one Radius + Padding drive every nested corner (JS sets --glass-pad / --glass-radius).
      panels: inner item = radius − padding − 1px border.
      toolbar: its 36px-tall items round to the Radius (capped at 18px, a full pill), and the bar wraps them at item + padding + 1px. */
-  --glass-inner-r: max(4px, calc(var(--glass-radius, 18px) - var(--glass-pad, 6px) - 1px));
-  --glass-item-r: min(var(--glass-radius, 18px), 18px);
-  --glass-bar-r: calc(var(--glass-item-r) + var(--glass-pad, 6px) + 1px);
+  --glass-inner-r: max(4px, calc(var(--glass-radius, 40px) - var(--glass-pad, 8px) - 1px));
+  --glass-item-r: min(var(--glass-radius, 40px), 18px);
+  --glass-bar-r: calc(var(--glass-item-r) + var(--glass-pad, 8px) + 1px);
 }
 
 :root[data-pt-theme="light"] {
@@ -102,7 +102,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 #pt-bar {
   position: fixed; top: 12px; left: 12px;
   display: flex; align-items: center; gap: 8px;
-  padding: var(--glass-pad, 6px); border-radius: var(--glass-bar-r);   /* concentric: 18px pill buttons + padding + 1px border */
+  padding: var(--glass-pad, 8px); border-radius: var(--glass-bar-r);   /* concentric: 18px pill buttons + padding + 1px border */
   transition: width 280ms cubic-bezier(.22,.61,.36,1), left 280ms cubic-bezier(.22,.61,.36,1);
   background: var(--pt-glass);
   -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur);
@@ -162,7 +162,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 .pt-dim-pop {
   position: fixed; min-width: 300px;
-  padding: var(--glass-pad, 6px); border-radius: var(--glass-radius, 18px);
+  padding: var(--glass-pad, 8px); border-radius: var(--glass-radius, 40px);
   background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur);
   border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow);
   display: none; z-index: 180; max-height: 70vh; overflow: auto;
@@ -192,8 +192,8 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-omni-results {
   position: fixed;
   background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur);
-  border: 1px solid var(--pt-glass-brd-strong); border-radius: var(--glass-radius, 18px); box-shadow: var(--pt-shadow);
-  max-height: 360px; overflow: auto; z-index: 180; display: none; padding: var(--glass-pad, 6px);
+  border: 1px solid var(--pt-glass-brd-strong); border-radius: var(--glass-radius, 40px); box-shadow: var(--pt-shadow);
+  max-height: 360px; overflow: auto; z-index: 180; display: none; padding: var(--glass-pad, 8px);
 }
 .pt-omni-results.pt-open { display: block; }
 .pt-omni-group { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--pt-text-faint); padding: 7px 10px 3px; }
@@ -216,7 +216,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 /* overflow menu */
 .pt-menu { position: relative; }
-.pt-menu-pop { position: fixed; min-width: 168px; padding: var(--glass-pad, 6px); border-radius: var(--glass-radius, 18px); background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); display: none; z-index: 180; }
+.pt-menu-pop { position: fixed; min-width: 168px; padding: var(--glass-pad, 8px); border-radius: var(--glass-radius, 40px); background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); display: none; z-index: 180; }
 .pt-menu-pop.pt-open { display: block; }
 .pt-menu-item { display: block; width: 100%; text-align: left; border: none; background: transparent; color: var(--pt-text); font: 13px var(--pt-font); padding: 8px 10px; border-radius: var(--glass-inner-r); cursor: pointer; }   /* concentric */
 .pt-menu-item:hover { background: var(--pt-accent-soft); }
@@ -239,8 +239,12 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 #pt-stagewrap.pt-bg-lines::before { background: repeating-linear-gradient(45deg, var(--pt-pattern) 0 1px, transparent 1px 16px); }
 
 #pt-ctx[hidden] { display: none; }
-#pt-ctx { position: fixed; z-index: 180; min-width: 236px; max-height: calc(100vh - 24px); overflow: auto; padding: var(--glass-pad, 6px); border-radius: var(--glass-radius, 18px); background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); }
+#pt-ctx { position: fixed; z-index: 180; min-width: 236px; max-height: calc(100vh - 24px); overflow: auto; padding: var(--glass-pad, 8px); border-radius: var(--glass-radius, 40px); background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); }
 .pt-ctx-title { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--pt-text-dim);   /* same ink as the labels */ padding: 5px 10px 3px; }
+/* ✕ in the panel's top-right corner, set in from the edge by the same padding as the items (concentric) */
+#pt-ctx-close { position: absolute; top: var(--glass-pad, 8px); right: var(--glass-pad, 8px); width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: none; border-radius: var(--glass-inner-r); background: transparent; color: var(--pt-text-faint); cursor: pointer; transition: color .12s, background .12s; }
+#pt-ctx-close:hover { color: var(--pt-text); background: var(--pt-accent-soft); }
+#pt-ctx-close svg { width: 13px; height: 13px; }
 /* a context row that opens a side flyout (Material & Light) */
 .pt-ctx-sub { display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left; border: none; background: transparent; color: var(--pt-text); font: 13px var(--pt-font); padding: 8px 8px 8px 10px; border-radius: var(--glass-inner-r); cursor: pointer; }
 .pt-ctx-sub:hover, .pt-ctx-sub[aria-expanded="true"] { background: var(--pt-accent-soft); }
@@ -634,7 +638,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
     0 14px 36px -6px       color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 16%), transparent);   /* so the Shadow dial reads on dark grounds too */
 }
 /* Corner radius: the glass panels round to taste (the toolbar keeps its concentric radius) */
-.pt-menu-pop, #pt-ctx, .pt-dim-pop, .pt-omni-results, .pt-modal, .pt-confirm-card, .pt-sheet-card { border-radius: var(--glass-radius, 18px); }
+.pt-menu-pop, #pt-ctx, .pt-dim-pop, .pt-omni-results, .pt-modal, .pt-confirm-card, .pt-sheet-card { border-radius: var(--glass-radius, 40px); }
 
 /* control reflex stack (the pen's inner pill) */
 .pt-rbtn, .pt-dim-trigger, .pt-omni input {
