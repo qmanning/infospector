@@ -11,6 +11,11 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 - A built-in **glass color picker** replaces the browser's default color dialog on every swatch (Pattern, Background, Accent, Tint, and first-run Accent). Drag the saturation/brightness square, slide the hue and — where it applies — opacity, or type a value; recently used colors are remembered across sessions.
 - The picker's value reads in **HEX, RGB, HSL, HSB, or CSS** (the CSS field takes any CSS color, named colors included). HEX is the default and the tool remembers the format you last chose. A **copy button** to the right of the boxes copies the value to the clipboard.
 - An **eyedropper** in the picker samples a color from anywhere on screen — outside the browser window included — in browsers that support it (Chrome, Edge, and other Chromium browsers). Where the browser has no such capability (Firefox, Safari), the eyedropper is hidden, since no web page can read pixels outside itself there.
+- A **Padding** dial (under Radius) for the space inside the toolbar and menus.
+
+### Changed
+- The chrome's corners are now **concentric by formula**: the panel **Radius** and **Padding** drive every nested corner (an inner item rounds to `radius − padding − border`; the toolbar wraps its 18px pill buttons at `18 + padding + border`), so the toolbar, its buttons, the menus and the context panel stay concentric at any padding.
+- The size dropdown's chevron is a lucide chevron (rotates up when open); more room between the dimensions and the scale %, less between the % and the chevron.
 
 ### Fixed
 - The stage is now a plain **rounded rectangle at every size** — desktop sizes no longer square off their top corners. With rulers on, the three corners the ruler strips run past (top-left, **top-right**, and bottom-left) go flat and only the free bottom-right corner keeps its radius.
