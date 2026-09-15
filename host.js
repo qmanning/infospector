@@ -95,7 +95,7 @@ const el = {
   menu: $('pt-menu'), menuBtn: $('pt-menu-btn'), menuPop: $('pt-menu-pop'),
   copyAllBtn: $('pt-copy-all'), exportBtn: $('pt-export'), importBtn: $('pt-import'), clearBtn: $('pt-clear'), importInput: $('pt-import-input'),
   stagewrap: $('pt-stagewrap'), stage: $('pt-stage'), viewport: $('pt-stage-viewport'), frame: $('pt-frame'),
-  ovEmpty: $('pt-overlay-empty'), ovBlocked: $('pt-overlay-blocked'), ovSelf: $('pt-overlay-self'),
+  ovEmpty: $('pt-overlay-empty'), ovBlocked: $('pt-overlay-blocked'),
   selbox: $('pt-selbox'), sbName: $('pt-sb-name'), sbSel: $('pt-sb-sel'), sbInfo: $('pt-sb-info'), addNote: $('pt-add-note'), rulerBtn: $('pt-ruler'),
   gaps: $('pt-gaps'), rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
@@ -324,24 +324,12 @@ function bindHandles() {
 /* ---------------- frame loading -------------------------------------- */
 
 function resolveUrl(input) { const raw = input.trim(); if (!raw) return null; if (/^https?:\/\//i.test(raw)) return raw; if (raw.startsWith('/')) return location.origin + raw; return location.origin + '/' + raw.replace(/^\/+/, ''); }
-// is this URL Infospector's own page? (loading it into the stage would boot a nested copy)
-function isSelfUrl(url) {
-  try { const u = new URL(url, location.href); if (u.origin !== location.origin) return false; const norm = (p) => (p.endsWith('/') ? p + 'index.html' : p); return norm(u.pathname) === norm(location.pathname); } catch (e) { return false; }
-}
-// don't inspect the inspector: show a friendly overlay instead of a nested Infospector
-function showSelfEmbed() {
-  clearTimeout(state.loadTimer);
-  el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.remove('pt-show'); el.ovSelf.classList.add('pt-show');
-  setFrameMode('self');
-  try { el.frame.src = 'about:blank'; } catch (e) { /* ignore */ }   // make sure no nested copy is left running
-}
 function loadTarget(input) {
   const url = resolveUrl(input); if (!url) return;
   const same = url === state.url && !!el.frame.src;
   state.url = url;
   el.omni.value = displayUrl(url); el.omniWrap.classList.toggle('pt-has-value', !!el.omni.value);
-  if (isSelfUrl(url)) { showSelfEmbed(); return; }
-  el.ovBlocked.classList.remove('pt-show'); el.ovSelf.classList.remove('pt-show'); el.ovEmpty.classList.add('pt-show');   // something visibly happens the moment you ask for a page
+  el.ovBlocked.classList.remove('pt-show'); el.ovEmpty.classList.add('pt-show');   // something visibly happens the moment you ask for a page
   setFrameMode('empty');
   clearTimeout(state.loadTimer);
   state.loadTimer = setTimeout(() => { if (state.frameMode === 'empty') { el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.add('pt-show'); setFrameMode('blocked'); } }, 12000);
@@ -352,11 +340,11 @@ function loadTarget(input) {
 // the search icon doubles as the inspectability indicator: a "ban" icon when the page can't be inspected
 function setFrameMode(m) {
   state.frameMode = m;
-  const blocked = m === 'viewonly' || m === 'blocked' || m === 'self';
+  const blocked = m === 'viewonly' || m === 'blocked';
   el.omniIcon.innerHTML = blocked ? ICONS.ban : ICONS.search;
   el.omniIcon.classList.toggle('pt-blocked', blocked);
   el.omniIcon.style.pointerEvents = blocked ? 'auto' : 'none';   // only the ban icon gets a tooltip
-  el.omniIcon.dataset.tip = m === 'self' ? "That's Infospector — it can't inspect itself" : m === 'blocked' ? 'Not inspectable · this site refused to load in the stage' : 'Not inspectable · external pages are view-only';
+  el.omniIcon.dataset.tip = m === 'blocked' ? 'Not inspectable · this site refused to load in the stage' : 'Not inspectable · external pages are view-only';
   el.inspect.disabled = m !== 'full';
   if (m !== 'full' && state.mode === 'inspect') setInspect(false);
 }
@@ -364,10 +352,8 @@ async function onFrameLoad() {
   clearTimeout(state.loadTimer);
   if (!state.url) return;
   let doc = null; try { doc = el.frame.contentDocument; } catch (e) { doc = null; }
-  if (doc && doc.location && doc.location.href === 'about:blank') return;   // the blank hop of a forced reload / self-embed guard — leave overlays as they are
-  // a copy of Infospector served at another path would boot a nested tool; stop that too (its own #pt-bar + #pt-frame give it away)
-  if (doc && doc.getElementById && doc.getElementById('pt-bar') && doc.getElementById('pt-frame')) { showSelfEmbed(); return; }
-  el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.remove('pt-show'); el.ovSelf.classList.remove('pt-show');
+  if (doc && doc.location && doc.location.href === 'about:blank') return;   // the blank hop of a forced reload — leave overlays as they are
+  el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.remove('pt-show');
   if (!doc) { setFrameMode('viewonly'); pushHistory(state.url); await switchPage(state.url); return; }
   setFrameMode('full');
   try { const win = el.frame.contentWindow; if (!win.__ptInspector) { const s = doc.createElement('script'); s.src = PT_BASE + 'inspector.js'; doc.body.appendChild(s); } } catch (e) { setFrameMode('viewonly'); }

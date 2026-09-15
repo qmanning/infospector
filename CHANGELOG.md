@@ -12,8 +12,7 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ### Fixed
 - The stage is now a plain **rounded rectangle at every size** — desktop sizes no longer square off their top corners. With rulers on, the three corners the ruler strips run past (top-left, **top-right**, and bottom-left) go flat and only the free bottom-right corner keeps its radius.
-- Loading **Infospector into its own stage** no longer boots a broken nested copy of the tool — it shows a short "That's Infospector" message instead, and the inspect button is disabled for it.
-- The **stage message overlays** ("This page can't be framed", the new self one) are readable again: they now carry their own near-opaque, theme-aware surface and ink, so turning the glass opacity down no longer makes them wash out.
+- The **stage message overlays** ("This page can't be framed") are readable again: they now carry their own near-opaque, theme-aware surface and ink, so turning the glass opacity down no longer makes them wash out, and each is topped with a ghosted Infospector glyph.
 
 ## [0.5.1] — 2026-09-14
 
