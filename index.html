@@ -156,8 +156,10 @@
     <label class="pt-ctx-color" data-tip="The stage size Infospector opens with"><span>Size</span><select class="pt-fmt pt-start-select" id="pt-start-size" aria-label="Start-up size"></select></label>
     <label class="pt-ctx-color" data-tip="The page Infospector opens with (a path on this site, or a full URL)"><span>Page</span><input type="text" id="pt-start-page" placeholder="/" spellcheck="false" aria-label="Start-up page" /></label>
     <div class="pt-menu-div"></div>
-    <button type="button" class="pt-ctx-title pt-ctx-sect" id="pt-ap-toggle" aria-expanded="true" aria-controls="pt-ap-body">Appearance<span class="pt-ctx-chev" aria-hidden="true">▾</span></button>
-    <div class="pt-ctx-sect-body" id="pt-ap-body">
+    <button type="button" class="pt-ctx-title pt-ctx-sect" id="pt-ap-toggle" aria-expanded="false" aria-controls="pt-ap-body">Material &amp; Light<span class="pt-ctx-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button>
+    <div class="pt-ctx-sect-body pt-collapsed" id="pt-ap-body">
+    <div class="pt-ctx-sect-inner">
+    <label class="pt-ctx-range" data-tip="How round the glass panels are (the toolbar keeps its own shape)"><span>Radius</span><input type="range" id="pt-ap-radius" min="0" max="40" step="1" /><output id="pt-ap-radius-val"></output></label>
     <label class="pt-ctx-range"><span>Blur</span><input type="range" id="pt-ap-blur" min="0" max="100" step="1" /><output id="pt-ap-blur-val"></output></label>
     <label class="pt-ctx-range"><span>Saturation</span><input type="range" id="pt-ap-sat" min="100" max="250" step="5" /><output id="pt-ap-sat-val"></output></label>
     <label class="pt-ctx-range"><span>Highlight</span><input type="range" id="pt-ap-light" min="0" max="2" step="0.1" /><output id="pt-ap-light-val"></output></label>
@@ -167,12 +169,12 @@
     <label class="pt-ctx-range" data-tip="A light the angle points across the glass, from the lit side"><span>Shine</span><input type="range" id="pt-ap-shine" min="0" max="100" step="1" /><output id="pt-ap-shine-val"></output></label>
     <label class="pt-ctx-range" data-tip="A darkness on the far side of the glass, opposite the shine"><span>Shadow</span><input type="range" id="pt-ap-shade" min="0" max="100" step="1" /><output id="pt-ap-shade-val"></output></label>
     <label class="pt-ctx-range" data-tip="Where the light comes from. 0° is straight above."><span>Angle</span><input type="range" id="pt-ap-lightangle" min="0" max="360" step="1" /><output id="pt-ap-lightangle-val"></output></label>
-    <label class="pt-ctx-range" data-tip="How round the glass panels are (the toolbar keeps its own shape)"><span>Radius</span><input type="range" id="pt-ap-radius" min="0" max="40" step="1" /><output id="pt-ap-radius-val"></output></label>
     <label class="pt-ctx-color"><span>Tint color</span><input type="color" id="pt-ap-color" aria-label="Glass tint color" /><input type="text" id="pt-ap-color-txt" placeholder="#hex · hsl() · hsb()" spellcheck="false" aria-label="Glass tint color value" /></label>
     <div class="pt-ctx-actions">
       <button class="pt-mini pt-icon-btn" id="pt-ap-reset" aria-label="Reset to Default" data-tip="Reset to Default"></button>
       <button class="pt-mini" id="pt-ap-copy" data-tip="Copy a config.js snippet of this look">Copy config</button>
       <button class="pt-mini pt-primary" id="pt-ap-save" data-tip="Save this look as your defaults (this browser)">Save</button>
+    </div>
     </div>
     </div>
   </div>

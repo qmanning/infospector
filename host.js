@@ -1337,10 +1337,10 @@ function bindRulersAndBg() {
   el.colFmt.addEventListener('change', () => { try { localStorage.setItem(FMT_KEY, el.colFmt.value); } catch (e) { /* ignore */ } syncColorInputs(); syncGlassInputs(); });
   el.apReset.addEventListener('click', resetToDefaults);
   el.apSave.addEventListener('click', saveAsDefaults);
-  // Appearance is a collapsible section; the open/closed state is remembered
-  const setApOpen = (open) => { el.apToggle.setAttribute('aria-expanded', String(open)); el.apBody.hidden = !open; try { localStorage.setItem(AP_OPEN_KEY, open ? '1' : '0'); } catch (e) { /* ignore */ } };
+  // Material & Light is a collapsible section (closed by default); the open/closed state is remembered
+  const setApOpen = (open) => { el.apToggle.setAttribute('aria-expanded', String(open)); el.apBody.classList.toggle('pt-collapsed', !open); try { localStorage.setItem(AP_OPEN_KEY, open ? '1' : '0'); } catch (e) { /* ignore */ } };
   el.apToggle.addEventListener('click', () => setApOpen(el.apToggle.getAttribute('aria-expanded') !== 'true'));
-  setApOpen((() => { try { return localStorage.getItem(AP_OPEN_KEY) !== '0'; } catch (e) { return true; } })());
+  setApOpen((() => { try { return localStorage.getItem(AP_OPEN_KEY) === '1'; } catch (e) { return false; } })());
   el.apCopy.addEventListener('click', () => { copyText(configSnippet()); closeCtx(); });
   document.querySelectorAll('.pt-ctx-range input[type="range"]').forEach((inp) => inp.addEventListener('input', updateSliderFills));
   loadBg();
