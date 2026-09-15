@@ -17,7 +17,8 @@ import { resolveStore, emptyDoc } from './adapters.js';
  */
 const BROWSER_R = 10;
 import * as L from './lib.js';
-const { radiusCss, STATES, STATE_COLORS, LEGACY_STATES, normState, tickSteps, hslOf, forTheme, lumOf, mixCss, contrast, hsbToHex, formatColor, humanize, isUrlish, toHex, rgbOf } = L;
+import { attachColorPicker } from './colorpicker.js';
+const { radiusCss, STATES, STATE_COLORS, LEGACY_STATES, normState, tickSteps, hslOf, forTheme, lumOf, mixCss, contrast, hsbToHex, formatColor, humanize, isUrlish, toHex, rgbOf, parseRgb } = L;
 const migrate = (doc) => L.migrate(doc, uid);
 const parseColor = (str) => L.parseColor(str, (v) => !!(window.CSS && CSS.supports('color', v)));
 const shortUrl = (u) => L.shortUrl(u, location.origin);
@@ -1301,6 +1302,26 @@ function bindRulersAndBg() {
   slide(el.apBlur, 'blur', Number); slide(el.apSat, 'sat', Number); slide(el.apBacking, 'backing', Number); slide(el.apLight, 'light', Number); slide(el.apDark, 'dark', Number); slide(el.apTint, 'tint', Number);
   el.apColor.addEventListener('input', () => { state.glass.color = el.apColor.value; state.glass.colorTheme = currentTheme(); applyGlass(); });
   el.apColorTxt.addEventListener('change', () => { const v = parseColor(el.apColorTxt.value); if (!v) { el.apColorTxt.classList.add('pt-invalid'); return; } state.glass.color = v; state.glass.colorTheme = currentTheme(); applyGlass(); });
+  // the glass color picker replaces the OS color dialog on every swatch: it reads the
+  // paired text field (so alpha survives) and writes back through the same events the
+  // native inputs already fire, so all the wiring above runs unchanged.
+  const bindPicker = (swatch, txt, alpha) => {
+    if (!swatch) return;
+    attachColorPicker(swatch, {
+      alpha,
+      read: () => { const t = txt && txt.value.trim(); return (t && parseRgb(t)) ? t : swatch.value; },
+      write: (v) => {
+        const rgb = parseRgb(v);
+        if (alpha && txt && rgb && rgb.a != null && rgb.a < 1) { txt.value = v; txt.dispatchEvent(new Event('change', { bubbles: true })); }
+        else { swatch.value = toHex(v); swatch.dispatchEvent(new Event('input', { bubbles: true })); }
+      },
+    });
+  };
+  bindPicker(el.colPattern, el.colPatternTxt, true);
+  bindPicker(el.colGround, el.colGroundTxt, true);
+  bindPicker(el.colAccent, el.colAccentTxt, false);   // accent is a solid highlight — no alpha
+  bindPicker(el.apColor, el.apColorTxt, true);
+  bindPicker($('pt-setup-accent'), $('pt-setup-accent-txt'), false);
   el.colFmt.addEventListener('change', () => { try { localStorage.setItem(FMT_KEY, el.colFmt.value); } catch (e) { /* ignore */ } syncColorInputs(); syncGlassInputs(); });
   el.apReset.addEventListener('click', resetToDefaults);
   el.apSave.addEventListener('click', saveAsDefaults);

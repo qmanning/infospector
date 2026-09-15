@@ -5,6 +5,10 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+### Added
+- A built-in **glass color picker** replaces the browser's default color dialog on every swatch (Pattern, Background, Accent, Tint, and first-run Accent). Drag the saturation/brightness square, slide the hue and — where it applies — opacity, or type a HEX or R/G/B value; recently used colors are remembered across sessions.
+- An **eyedropper** in the picker samples a color from anywhere on screen — outside the browser window included — in browsers that support it (Chrome, Edge, and other Chromium browsers). Where the browser has no such capability (Firefox, Safari), the eyedropper is hidden, since no web page can read pixels outside itself there.
+
 ## [0.5.1] — 2026-09-14
 
 ### Fixed

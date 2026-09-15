@@ -119,7 +119,12 @@ Right-click the background to dial in the pattern, colors and glass (blur, satur
 shadow, opacity, tint). **Backing** is a solid legibility layer under the glass —
 your tint's hue, pushed dark in dark mode and light in light mode — so text stays readable over
 any page. Colors are **theme-aware**: pick one in light mode and dark mode gets a hue-matched dark
-version automatically (and vice versa); set it in both themes to control each exactly. Then:
+version automatically (and vice versa); set it in both themes to control each exactly.
+
+Every color swatch opens a **glass color picker** — a saturation/brightness square, hue and opacity
+sliders, HEX and R/G/B fields, and your recently used colors. Its **eyedropper** samples a color
+from anywhere on your screen (Chrome, Edge, and other Chromium browsers; it's hidden where the
+browser can't reach outside the page). Then:
 
 - **Save as defaults** — remembers it in this browser. **Reset to defaults** returns to the shipped
   look (and forgets the browser-saved one).
