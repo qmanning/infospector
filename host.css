@@ -604,8 +604,10 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 /* surface reflex stack (the pen's .switcher) */
 #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-toast, #pt-tip, .pt-confirm-card, .pt-sheet-card {
-  /* Backing: a solid legibility layer under the glass tint (JS sets color + amount) */
-  background-image: linear-gradient(color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent), color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent));
+  /* Shine: a directional gloss the light angle points; over the Backing (a solid legibility layer under the tint) */
+  background-image:
+    linear-gradient(calc(var(--glass-light-angle, 145) * 1deg + 180deg), color-mix(in srgb, var(--c-light) calc(var(--glass-shine, 0) * 0.5%), transparent) 0%, transparent 58%),
+    linear-gradient(color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent), color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent));
   border-color: transparent;
   box-shadow:
     inset 0 0 0 1px       color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
@@ -620,6 +622,9 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
     0 6px 16px 0           color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 8%), transparent),
     0 14px 36px -6px       color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 16%), transparent);   /* so the Shadow dial reads on dark grounds too */
 }
+
+/* Corner radius: the glass panels round to taste (the toolbar keeps its concentric radius) */
+.pt-menu-pop, #pt-ctx, .pt-dim-pop, .pt-omni-results, .pt-modal, .pt-confirm-card, .pt-sheet-card { border-radius: var(--glass-radius, 18px); }
 
 /* control reflex stack (the pen's inner pill) */
 .pt-rbtn, .pt-dim-trigger, .pt-omni input {

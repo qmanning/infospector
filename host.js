@@ -102,6 +102,7 @@ const el = {
   colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), colAccent: $('pt-col-accent'), colAccentTxt: $('pt-col-accent-txt'),
   apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'), apToggle: $('pt-ap-toggle'), apBody: $('pt-ap-body'),
   apBlur: $('pt-ap-blur'), apBacking: $('pt-ap-backing'), apSat: $('pt-ap-sat'), apLight: $('pt-ap-light'), apDark: $('pt-ap-dark'), apTint: $('pt-ap-tint'), apColor: $('pt-ap-color'), apColorTxt: $('pt-ap-color-txt'), apReset: $('pt-ap-reset'),
+  apShine: $('pt-ap-shine'), apLightAngle: $('pt-ap-lightangle'), apRadius: $('pt-ap-radius'),
   modals: $('pt-modals'), toast: $('pt-toast')
 };
 
@@ -953,7 +954,7 @@ function startGuideFromRuler(axis, e) {
 
 const BG_KEY = 'pt:bg', DEFAULTS_KEY = 'pt:defaults';
 const BG_BASE = { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null, accent: null };
-const GLASS_BASE = { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null };
+const GLASS_BASE = { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null, shine: null, lightAngle: null, radius: null };
 // UI ink by formula, not by theme: estimate the glass surface (ground ← tint at its opacity ←
 // backing) and take whichever of black/white contrasts more with it (WCAG). Labels and section
 // headers are that ink at 90%, faint text at 65%.
@@ -1166,7 +1167,7 @@ function syncColorInputs() {
 /* ---------------- appearance (the glass recipe's dials) ---------------- */
 
 const GLASS_KEY = 'pt:glass';
-const GLASS_DEFAULTS = { blur: 8, sat: 150, tint: 14, color: '#bbbbbc', backing: 35 };   // light/dark reflex defaults come from the theme
+const GLASS_DEFAULTS = { blur: 8, sat: 150, tint: 14, color: '#bbbbbc', backing: 35, shine: 0, lightAngle: 145, radius: 18 };   // light/dark reflex defaults come from the theme
 
 function applyGlass() {
   const g = state.glass, root = document.documentElement.style;
@@ -1177,6 +1178,9 @@ function applyGlass() {
   set('--glass-reflex-dark', g.dark);
   set('--glass-tint', g.tint == null ? null : g.tint + '%');
   set('--glass-tint-2', g.tint == null ? null : Math.min(100, g.tint + 22) + '%');  // controls sit ~22 points denser than surfaces
+  set('--glass-shine', g.shine == null ? null : String(g.shine));
+  set('--glass-light-angle', g.lightAngle == null ? null : String(g.lightAngle));
+  set('--glass-radius', g.radius == null ? null : g.radius + 'px');
   const th = currentTheme(), tintCss = forTheme(g.color, g.colorTheme, th);
   set('--c-glass', tintCss);
   const tintFx = tintCss || getComputedStyle(document.documentElement).getPropertyValue('--c-glass').trim() || GLASS_DEFAULTS.color;
@@ -1198,11 +1202,15 @@ function syncGlassInputs() {
   const dark = num(g.dark, parseFloat(cs.getPropertyValue('--glass-reflex-dark')));
   const tint = num(g.tint, parseFloat(cs.getPropertyValue('--glass-tint')) || GLASS_DEFAULTS.tint);
   const backing = num(g.backing, GLASS_DEFAULTS.backing);
+  const shine = num(g.shine, GLASS_DEFAULTS.shine);
+  const lightAngle = num(g.lightAngle, GLASS_DEFAULTS.lightAngle);
+  const radius = num(g.radius, GLASS_DEFAULTS.radius);
   const color = cs.getPropertyValue('--c-glass').trim() || GLASS_DEFAULTS.color;   // effective (theme-adjusted)
   const put = (inp, out, v, unit) => { inp.value = v; out.textContent = (Number.isInteger(v) ? v : v.toFixed(1)) + unit; };
   put(el.apBlur, $('pt-ap-blur-val'), blur, 'px'); put(el.apSat, $('pt-ap-sat-val'), sat, '%');
   put(el.apLight, $('pt-ap-light-val'), light, '×'); put(el.apDark, $('pt-ap-dark-val'), dark, '×');
   put(el.apTint, $('pt-ap-tint-val'), tint, '%'); put(el.apBacking, $('pt-ap-backing-val'), backing, '%');
+  put(el.apShine, $('pt-ap-shine-val'), shine, ''); put(el.apLightAngle, $('pt-ap-lightangle-val'), lightAngle, '°'); put(el.apRadius, $('pt-ap-radius-val'), radius, 'px');
   el.apColor.value = toHex(color); if (document.activeElement !== el.apColorTxt) el.apColorTxt.value = formatColor(color, colorFmt());
   el.apColorTxt.classList.remove('pt-invalid');
   updateSliderFills();
@@ -1301,6 +1309,7 @@ function bindRulersAndBg() {
   // Appearance sliders drive the glass recipe live
   const slide = (inp, key, parse) => inp.addEventListener('input', () => { state.glass[key] = parse(inp.value); applyGlass(); });
   slide(el.apBlur, 'blur', Number); slide(el.apSat, 'sat', Number); slide(el.apBacking, 'backing', Number); slide(el.apLight, 'light', Number); slide(el.apDark, 'dark', Number); slide(el.apTint, 'tint', Number);
+  slide(el.apShine, 'shine', Number); slide(el.apLightAngle, 'lightAngle', Number); slide(el.apRadius, 'radius', Number);
   el.apColor.addEventListener('input', () => { state.glass.color = el.apColor.value; state.glass.colorTheme = currentTheme(); applyGlass(); });
   el.apColorTxt.addEventListener('change', () => { const v = parseColor(el.apColorTxt.value); if (!v) { el.apColorTxt.classList.add('pt-invalid'); return; } state.glass.color = v; state.glass.colorTheme = currentTheme(); applyGlass(); });
   // the glass color picker replaces the OS color dialog on every swatch: it reads the
