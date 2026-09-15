@@ -6,6 +6,11 @@
   --pt-ground-2: #101218;
   --pt-glass: rgba(26, 28, 36, 0.74);
   --pt-glass-2: rgba(38, 41, 52, 0.76);
+  /* stage overlays carry their own near-opaque surface + ink: the tool retunes --pt-text for the
+     glass, so an overlay can't borrow it — it needs a fixed pairing that stays legible at any glass opacity */
+  --pt-overlay-bg: rgba(16, 18, 24, 0.93);
+  --pt-overlay-fg: #eef0f5;
+  --pt-overlay-fg-dim: #a7adba;
   --pt-sheen: rgba(255, 255, 255, 0.16);
   --pt-region: #ffd83d;                /* shift+drag area selection */
   --pt-glass-brd: rgba(255, 255, 255, 0.12);
@@ -44,6 +49,9 @@
   --pt-ground-2: #dfe2e8;
   --pt-glass: rgba(255, 255, 255, 0.70);
   --pt-glass-2: rgba(255, 255, 255, 0.82);
+  --pt-overlay-bg: rgba(247, 248, 251, 0.95);
+  --pt-overlay-fg: #14171d;
+  --pt-overlay-fg-dim: #545b68;
   --pt-sheen: rgba(255, 255, 255, 0.55);
   --pt-glass-brd: rgba(0, 0, 0, 0.10);
   --pt-glass-brd-strong: rgba(0, 0, 0, 0.16);
@@ -336,11 +344,11 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-e-l { top: -6px; bottom: -6px; left: -6px; width: 11px; }
 .pt-e-r { top: -6px; bottom: -6px; right: -6px; width: 11px; }
 
-.pt-overlay { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; background: var(--pt-glass-2); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); color: var(--pt-text-dim); border-radius: inherit; }
+.pt-overlay { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; background: var(--pt-overlay-bg); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: var(--pt-overlay-fg-dim); border-radius: inherit; }
 .pt-overlay.pt-show { display: grid; }
-.pt-overlay h2 { color: var(--pt-text); font-size: 15px; margin: 0 0 6px; }
+.pt-overlay h2 { color: var(--pt-overlay-fg); font-size: 15px; margin: 0 0 6px; }
 .pt-overlay p { margin: 0 auto; max-width: 340px; font-size: 12.5px; line-height: 1.6; }
-.pt-overlay code { background: var(--pt-glass); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.pt-overlay code { background: color-mix(in srgb, var(--pt-overlay-fg) 12%, transparent); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
 .pt-handle { position: absolute; z-index: 30; width: 11px; height: 11px; background: var(--pt-accent); border: 1.5px solid #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.35); opacity: 0; transition: opacity 140ms; }
 #pt-stage.pt-edge-hover .pt-handle, .pt-handle.pt-dragging { opacity: 1; }
