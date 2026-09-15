@@ -6,7 +6,7 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 ## [Unreleased]
 
 ### Added
-- The glass controls live under a collapsible **Material & Light** section (collapsed by default, animated open/close with a chevron), and it remembers whether you left it open.
+- The glass controls live in a **Material & Light** flyout — the context panel stays short, and picking "Material & Light" opens the sliders in a side panel that lands on whichever side has room and never runs off-screen.
 - Directional lighting for the glass under Appearance: **Shine** (a light on the lit side), **Shadow** (a darkness on the far side), and one **Angle** that points both (0° is straight above), plus a **Radius** dial for how round the glass panels are (the toolbar keeps its concentric shape). The old drop-shadow dial is now named **Distance**. All ship in the copied `config.js` and default to the current look.
 - A built-in **glass color picker** replaces the browser's default color dialog on every swatch (Pattern, Background, Accent, Tint, and first-run Accent). Drag the saturation/brightness square, slide the hue and — where it applies — opacity, or type a value; recently used colors are remembered across sessions.
 - The picker's value reads in **HEX, RGB, HSL, HSB, or CSS** (the CSS field takes any CSS color, named colors included). HEX is the default and the tool remembers the format you last chose. A **copy button** to the right of the boxes copies the value to the clipboard.

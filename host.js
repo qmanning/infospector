@@ -100,7 +100,7 @@ const el = {
   gaps: $('pt-gaps'), rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
   colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), colAccent: $('pt-col-accent'), colAccentTxt: $('pt-col-accent-txt'),
-  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'), apToggle: $('pt-ap-toggle'), apBody: $('pt-ap-body'),
+  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'), apToggle: $('pt-ap-toggle'), apPop: $('pt-ap-pop'),
   apBlur: $('pt-ap-blur'), apBacking: $('pt-ap-backing'), apSat: $('pt-ap-sat'), apLight: $('pt-ap-light'), apDark: $('pt-ap-dark'), apTint: $('pt-ap-tint'), apColor: $('pt-ap-color'), apColorTxt: $('pt-ap-color-txt'), apReset: $('pt-ap-reset'),
   apShine: $('pt-ap-shine'), apShade: $('pt-ap-shade'), apLightAngle: $('pt-ap-lightangle'), apRadius: $('pt-ap-radius'), apPad: $('pt-ap-pad'),
   modals: $('pt-modals'), toast: $('pt-toast')
@@ -1240,7 +1240,24 @@ function openCtx(x, y) {
   el.ctx.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + 'px';
   el.ctx.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + 'px';
 }
-function closeCtx() { hidePop(el.ctx, { attr: true }); }
+function closeCtx() { hidePop(el.ctx, { attr: true }); closeApPop(); }
+
+// Material & Light flyout: sits beside the context panel on whichever side has room, clamped on-screen
+function placeApPop() {
+  const pop = el.apPop, ctx = el.ctx.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight, gap = 6, m = 8;
+  const roomRight = window.innerWidth - ctx.right - gap - m, roomLeft = ctx.left - gap - m;
+  let left;
+  if (pw <= roomRight) left = ctx.right + gap;                 // prefer the right
+  else if (pw <= roomLeft) left = ctx.left - gap - pw;          // else the left
+  else left = roomRight >= roomLeft ? window.innerWidth - pw - m : m;   // neither fits: hug the roomier side
+  left = Math.max(m, Math.min(left, window.innerWidth - pw - m));
+  let top = Math.min(el.apToggle.getBoundingClientRect().top, ctx.top);   // line up near the trigger
+  top = Math.max(m, Math.min(top, window.innerHeight - ph - m));          // never off-screen
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+}
+function openApPop() { syncGlassInputs(); showPop(el.apPop); placeApPop(); requestAnimationFrame(placeApPop); el.apToggle.setAttribute('aria-expanded', 'true'); }
+function closeApPop() { if (el.apPop.classList.contains('pt-open')) hidePop(el.apPop); el.apToggle.setAttribute('aria-expanded', 'false'); }
 
 function toggleInspectShortcut() { if (!el.inspect.disabled) setInspect(state.mode !== 'inspect'); }
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -1297,7 +1314,11 @@ function bindRulersAndBg() {
     if (!t.closest('.pt-modal, #pt-selbox, #pt-gbox, #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, #pt-confirm, .pt-sheet, #pt-gaps, #pt-keys-btn, #pt-tip')) { hideOpenModals(); if (state.selected && !t.closest('.pt-guide, .pt-ruler, #pt-ruler-corner')) hideSelbox(); }   // …but not a press on a guide or a ruler: wrap guides belong to the selection and would vanish under the click
   }, true);
   el.stagewrap.addEventListener('contextmenu', (e) => { if (e.target !== el.stagewrap) return; e.preventDefault(); openCtx(e.clientX, e.clientY); });
-  document.addEventListener('pointerdown', (e) => { if (!el.ctx.hidden && !el.ctx.contains(e.target)) closeCtx(); }, true);
+  document.addEventListener('pointerdown', (e) => {
+    const t = e.target, inCtx = el.ctx.contains(t), inFlyout = el.apPop.contains(t);
+    if (el.apPop.classList.contains('pt-open') && !inFlyout && !el.apToggle.contains(t)) closeApPop();   // a press outside the flyout (its trigger aside) closes it
+    if (!el.ctx.hidden && !inCtx && !inFlyout) closeCtx();                                                // …but a press in the flyout keeps the panel open
+  }, true);
   const segIcons = { dots: ICONS.grip, grid: ICONS.grid3, lines: ICONS.diagonal, none: ICONS.ban };
   el.ctx.querySelectorAll('[data-bg]').forEach((b) => { b.innerHTML = segIcons[b.dataset.bg] || ''; b.addEventListener('click', () => { state.bg.pattern = b.dataset.bg; applyBg(); }); });
   el.bgOpacity.addEventListener('input', () => { state.bg.opacity = Number(el.bgOpacity.value); applyBg(); });
@@ -1339,10 +1360,8 @@ function bindRulersAndBg() {
   el.colFmt.addEventListener('change', () => { try { localStorage.setItem(FMT_KEY, el.colFmt.value); } catch (e) { /* ignore */ } syncColorInputs(); syncGlassInputs(); });
   el.apReset.addEventListener('click', resetToDefaults);
   el.apSave.addEventListener('click', saveAsDefaults);
-  // Material & Light is a collapsible section (closed by default); the open/closed state is remembered
-  const setApOpen = (open) => { el.apToggle.setAttribute('aria-expanded', String(open)); el.apBody.classList.toggle('pt-collapsed', !open); try { localStorage.setItem(AP_OPEN_KEY, open ? '1' : '0'); } catch (e) { /* ignore */ } };
-  el.apToggle.addEventListener('click', () => setApOpen(el.apToggle.getAttribute('aria-expanded') !== 'true'));
-  setApOpen((() => { try { return localStorage.getItem(AP_OPEN_KEY) === '1'; } catch (e) { return false; } })());
+  // Material & Light opens as a side flyout (the context panel is too tall to hold it inline)
+  el.apToggle.addEventListener('click', () => { el.apPop.classList.contains('pt-open') ? closeApPop() : openApPop(); });
   el.apCopy.addEventListener('click', () => { copyText(configSnippet()); closeCtx(); });
   document.querySelectorAll('.pt-ctx-range input[type="range"]').forEach((inp) => inp.addEventListener('input', updateSliderFills));
   loadBg();

@@ -239,16 +239,13 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 #pt-ctx[hidden] { display: none; }
 #pt-ctx { position: fixed; z-index: 180; min-width: 236px; max-height: calc(100vh - 24px); overflow: auto; padding: var(--glass-pad, 6px); border-radius: var(--glass-radius, 18px); background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); }
 .pt-ctx-title { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--pt-text-dim);   /* same ink as the labels */ padding: 5px 10px 3px; }
-/* collapsible section: the title doubles as a show/hide header (keeps the .pt-ctx-title 10px font) */
-.pt-ctx-sect { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; border: none; background: transparent; font-family: inherit; cursor: pointer; border-radius: 8px; }
-.pt-ctx-sect:hover { color: var(--pt-text); }
-.pt-ctx-chev { display: inline-flex; color: var(--pt-text-faint); transition: transform .28s cubic-bezier(.22,.61,.36,1); }
-.pt-ctx-chev svg { display: block; }
-.pt-ctx-sect[aria-expanded="true"] .pt-ctx-chev { transform: rotate(180deg); }   /* chevron-down → chevron-up when open */
-/* animated collapse via grid-template-rows 0fr↔1fr */
-.pt-ctx-sect-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .28s cubic-bezier(.22,.61,.36,1); }
-.pt-ctx-sect-body.pt-collapsed { grid-template-rows: 0fr; }
-.pt-ctx-sect-inner { overflow: hidden; min-height: 0; }
+/* a context row that opens a side flyout (Material & Light) */
+.pt-ctx-sub { display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left; border: none; background: transparent; color: var(--pt-text); font: 13px var(--pt-font); padding: 8px 8px 8px 10px; border-radius: var(--glass-inner-r); cursor: pointer; }
+.pt-ctx-sub:hover, .pt-ctx-sub[aria-expanded="true"] { background: var(--pt-accent-soft); }
+.pt-ctx-sub-caret { display: inline-flex; color: var(--pt-text-faint); }
+.pt-ctx-sub[aria-expanded="true"] .pt-ctx-sub-caret { color: var(--pt-text); }
+/* the flyout panel itself (a glass menu-pop, wider, scrolls if it can't fit) */
+.pt-ap-pop { min-width: 256px; max-width: 264px; max-height: calc(100vh - 16px); overflow: auto; }
 .pt-ctx-item { display: flex; align-items: center; width: 100%; text-align: left; border: none; background: transparent; color: var(--pt-text); font: 13px var(--pt-font); padding: 7px 10px 7px 26px; border-radius: var(--glass-inner-r); cursor: pointer; position: relative; }   /* concentric */
 .pt-ctx-item:hover { background: var(--pt-accent-soft); }
 .pt-ctx-actions { display: flex; gap: 6px; padding: 16px 4px 2px; }
