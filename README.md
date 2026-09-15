@@ -122,9 +122,10 @@ any page. Colors are **theme-aware**: pick one in light mode and dark mode gets 
 version automatically (and vice versa); set it in both themes to control each exactly.
 
 Every color swatch opens a **glass color picker** — a saturation/brightness square, hue and opacity
-sliders, HEX and R/G/B fields, and your recently used colors. Its **eyedropper** samples a color
-from anywhere on your screen (Chrome, Edge, and other Chromium browsers; it's hidden where the
-browser can't reach outside the page). Then:
+sliders, and your recently used colors. Read and type the value as **HEX, RGB, HSL, HSB, or any CSS
+color** (it remembers the format you last used), and **copy** it with one click. Its **eyedropper**
+samples a color from anywhere on your screen (Chrome, Edge, and other Chromium browsers; it's hidden
+where the browser can't reach outside the page). Then:
 
 - **Save as defaults** — remembers it in this browser. **Reset to defaults** returns to the shipped
   look (and forgets the browser-saved one).
