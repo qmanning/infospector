@@ -6,6 +6,11 @@
   --pt-ground-2: #101218;
   --pt-glass: rgba(26, 28, 36, 0.74);
   --pt-glass-2: rgba(38, 41, 52, 0.76);
+  /* stage overlays carry their own near-opaque surface + ink: the tool retunes --pt-text for the
+     glass, so an overlay can't borrow it — it needs a fixed pairing that stays legible at any glass opacity */
+  --pt-overlay-bg: rgba(16, 18, 24, 0.93);
+  --pt-overlay-fg: #eef0f5;
+  --pt-overlay-fg-dim: #a7adba;
   --pt-sheen: rgba(255, 255, 255, 0.16);
   --pt-region: #ffd83d;                /* shift+drag area selection */
   --pt-glass-brd: rgba(255, 255, 255, 0.12);
@@ -44,6 +49,9 @@
   --pt-ground-2: #dfe2e8;
   --pt-glass: rgba(255, 255, 255, 0.70);
   --pt-glass-2: rgba(255, 255, 255, 0.82);
+  --pt-overlay-bg: rgba(247, 248, 251, 0.95);
+  --pt-overlay-fg: #14171d;
+  --pt-overlay-fg-dim: #545b68;
   --pt-sheen: rgba(255, 255, 255, 0.55);
   --pt-glass-brd: rgba(0, 0, 0, 0.10);
   --pt-glass-brd-strong: rgba(0, 0, 0, 0.16);
@@ -117,25 +125,25 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-dim { position: relative; }
 .pt-dim-trigger {
   height: 36px; display: inline-flex; align-items: center; gap: 4px;
-  padding: 0 6px 0 4px; border-radius: 18px;
+  padding: 0 4px; border-radius: 18px;   /* symmetric 4px so the inner pills sit an even 5px inside the stadium (concentric) */
   background: var(--pt-glass-2); border: 1px solid var(--pt-glass-brd);
   color: var(--pt-text); white-space: nowrap; transition: border-color .16s, box-shadow .16s;
 }
 .pt-dim-trigger:hover { border-color: var(--pt-glass-brd-strong); }
 .pt-dim-trigger.pt-fit-glow { border-color: var(--pt-fit); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pt-fit) 30%, transparent); }
 .pt-dim-scale { margin-left: 6px; font-weight: 600; color: var(--pt-fit); }   /* "· 74%" while fitting, in the fit orange */
-.pt-dim-val, .pt-chev { height: 28px; border: none; background: transparent; color: var(--pt-text); cursor: pointer; border-radius: 14px; }
+.pt-dim-val, .pt-chev { height: 28px; border: none; background: transparent; color: var(--pt-text); cursor: pointer; border-radius: 999px; }
 .pt-dim-val { padding: 0 6px 0 9px; font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; }
 .pt-dim-val:hover { background: var(--pt-glass); }
 .pt-chev { width: 24px; color: var(--pt-text-faint); font-size: 10px; }
 .pt-chev:hover { color: var(--pt-text); background: var(--pt-glass); }
 /* Custom mode: the numbers become two live inputs */
-.pt-dim-inputs { display: none; align-items: center; gap: 4px; padding-left: 4px; }
+.pt-dim-inputs { display: none; align-items: center; gap: 4px; }   /* no extra left pad — the group sits an even 5px inside the trigger, like the readout */
 .pt-dim-inputs input {
-  width: 58px; height: 28px; text-align: center; border-radius: 13px;   /* 18 − 4 inset − 1 border */
+  width: 58px; height: 28px; text-align: center; border-radius: 999px;   /* full pills, like the stadium trigger they nest in (an even ~5px gap all round) */
   border: 1px solid var(--pt-glass-brd-strong); background: color-mix(in srgb, var(--pt-text) 9%, transparent);
   color: var(--pt-text); font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; outline: none;
-  -moz-appearance: textfield;
+  -webkit-appearance: none; appearance: none;   /* strip the native number-field chrome — it was clamping the border-radius (rendered a small radius no matter the value) */
 }
 .pt-dim-inputs input::-webkit-outer-spin-button, .pt-dim-inputs input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .pt-dim-inputs input:focus { border-color: var(--pt-accent); box-shadow: 0 0 0 3px var(--pt-accent-soft); }
@@ -224,6 +232,12 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 #pt-ctx[hidden] { display: none; }
 #pt-ctx { position: fixed; z-index: 180; min-width: 236px; max-height: calc(100vh - 24px); overflow: auto; padding: 6px; border-radius: 18px; background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); }
 .pt-ctx-title { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--pt-text-dim);   /* same ink as the labels */ padding: 5px 10px 3px; }
+/* collapsible section: the title doubles as a show/hide header */
+.pt-ctx-sect { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; border: none; background: transparent; font: inherit; cursor: pointer; border-radius: 8px; }
+.pt-ctx-sect:hover { color: var(--pt-text); }
+.pt-ctx-chev { font-size: 9px; line-height: 1; color: var(--pt-text-faint); transition: transform .2s cubic-bezier(.22,.61,.36,1); }
+.pt-ctx-sect[aria-expanded="false"] .pt-ctx-chev { transform: rotate(-90deg); }
+.pt-ctx-sect-body[hidden] { display: none; }
 .pt-ctx-item { display: flex; align-items: center; width: 100%; text-align: left; border: none; background: transparent; color: var(--pt-text); font: 13px var(--pt-font); padding: 7px 10px 7px 26px; border-radius: 11px; cursor: pointer; position: relative; }   /* 18 − 6 − 1 */
 .pt-ctx-item:hover { background: var(--pt-accent-soft); }
 .pt-ctx-actions { display: flex; gap: 6px; padding: 16px 4px 2px; }
@@ -336,11 +350,13 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-e-l { top: -6px; bottom: -6px; left: -6px; width: 11px; }
 .pt-e-r { top: -6px; bottom: -6px; right: -6px; width: 11px; }
 
-.pt-overlay { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; background: var(--pt-glass-2); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur); color: var(--pt-text-dim); border-radius: inherit; }
+.pt-overlay { position: absolute; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; background: var(--pt-overlay-bg); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: var(--pt-overlay-fg-dim); border-radius: inherit; }
 .pt-overlay.pt-show { display: grid; }
-.pt-overlay h2 { color: var(--pt-text); font-size: 15px; margin: 0 0 6px; }
+.pt-overlay h2 { color: var(--pt-overlay-fg); font-size: 15px; margin: 0 0 6px; }
 .pt-overlay p { margin: 0 auto; max-width: 340px; font-size: 12.5px; line-height: 1.6; }
-.pt-overlay code { background: var(--pt-glass); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.pt-overlay code { background: color-mix(in srgb, var(--pt-overlay-fg) 12%, transparent); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.pt-overlay-glyph { display: block; width: 62px; height: 62px; margin: 0 auto 16px; color: var(--pt-overlay-fg); opacity: 0.18; }   /* ghosted Infospector mark */
+.pt-overlay-glyph svg { display: block; width: 100%; height: 100%; }
 
 .pt-handle { position: absolute; z-index: 30; width: 11px; height: 11px; background: var(--pt-accent); border: 1.5px solid #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.35); opacity: 0; transition: opacity 140ms; }
 #pt-stage.pt-edge-hover .pt-handle, .pt-handle.pt-dragging { opacity: 1; }
@@ -450,6 +466,68 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-ctx-color input[type="text"]:focus { border-color: var(--pt-accent); }
 .pt-ctx-color input[type="text"].pt-invalid { border-color: var(--pt-danger); }
 
+/* ---------------- glass color picker (colorpicker.js) ---------------- */
+.pt-cpick {
+  position: fixed; z-index: 200; width: 280px; box-sizing: border-box; padding: 12px;
+  border-radius: 18px; background: var(--pt-glass); -webkit-backdrop-filter: var(--pt-blur-webkit); backdrop-filter: var(--pt-blur);
+  border: 1px solid var(--pt-glass-brd-strong); box-shadow: var(--pt-shadow); color: var(--pt-text);
+  opacity: 0; transform: translateY(-6px) scale(.97); filter: blur(4px);
+  transition: opacity 140ms ease, transform 140ms cubic-bezier(.22,.61,.36,1), filter 140ms ease;
+}
+.pt-cpick.pt-open { opacity: 1; transform: none; filter: none; }
+.pt-cpick[hidden] { display: none; }
+
+/* saturation / brightness square */
+.pt-cp-sv { position: relative; width: 100%; height: 152px; border-radius: 12px; overflow: hidden; cursor: crosshair; background: var(--hue, #f00); border: 1px solid var(--pt-glass-brd); outline: none; touch-action: none; }
+.pt-cp-sv:focus-visible { box-shadow: 0 0 0 2px var(--pt-accent); }
+.pt-cp-sv-sat, .pt-cp-sv-val { position: absolute; inset: 0; border-radius: inherit; }
+.pt-cp-sv-sat { background: linear-gradient(to right, #fff, rgba(255,255,255,0)); }
+.pt-cp-sv-val { background: linear-gradient(to top, #000, rgba(0,0,0,0)); }
+.pt-cp-sv-thumb { position: absolute; width: 16px; height: 16px; border-radius: 50%; transform: translate(-50%, -50%); border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.5); pointer-events: none; }
+
+/* hue + alpha sliders */
+.pt-cp-sliders { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.pt-cp-sliders input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; margin: 0; padding: 0; border-radius: 999px; cursor: pointer; outline: none; }
+/* selectors kept at least as specific as the base rule above, so the track gradients actually show */
+.pt-cp-sliders input[type="range"].pt-cp-hue { background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%); box-shadow: inset 0 0 0 1px var(--pt-glass-brd); }
+.pt-cp-sliders input[type="range"].pt-cp-alpha { position: relative;
+  background:
+    linear-gradient(to right, transparent, var(--stop, #000)),
+    conic-gradient(var(--pt-check, rgba(0,0,0,.28)) 0 25%, transparent 0 50%, var(--pt-check, rgba(0,0,0,.28)) 0 75%, transparent 0) 0 0 / 10px 10px;
+  box-shadow: inset 0 0 0 1px var(--pt-glass-brd);
+}
+.pt-cp-sliders input[type="range"].pt-no-alpha { display: none; }
+.pt-cp-sliders input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.45); cursor: grab; }
+.pt-cp-sliders input[type="range"]:active::-webkit-slider-thumb { cursor: grabbing; }
+.pt-cp-sliders input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.45); cursor: grab; }
+.pt-cp-sliders input[type="range"]:focus-visible { box-shadow: 0 0 0 2px var(--pt-accent), inset 0 0 0 1px var(--pt-glass-brd); }
+:root[data-pt-theme="light"] .pt-cp-alpha { --pt-check: rgba(0,0,0,.18); }
+
+/* fields row: eyedropper · format select · value boxes · copy */
+.pt-cp-fields { display: flex; align-items: flex-end; gap: 4px; }
+.pt-cp-eyedrop, .pt-cp-copy { flex: none; width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border-radius: 8px; border: 1px solid var(--pt-glass-brd-strong); background: color-mix(in srgb, var(--pt-text) 9%, transparent); color: var(--pt-text); cursor: pointer; transition: border-color .12s, background .12s, transform .12s, color .12s; }
+.pt-cp-eyedrop:hover, .pt-cp-copy:hover { border-color: var(--pt-accent); background: var(--pt-accent-soft); }
+.pt-cp-eyedrop:active, .pt-cp-copy:active { transform: scale(.94); }
+.pt-cp-eyedrop[hidden] { display: none; }
+.pt-cp-copy.pt-copied { color: var(--pt-done); border-color: var(--pt-done); background: color-mix(in srgb, var(--pt-done) 18%, transparent); }
+/* the extra .pt-cp-fields scope outranks the base .pt-fmt so the row's 30px / 8px win */
+.pt-cp-fields .pt-cp-fmt { flex: none; height: 30px; border-radius: 8px; font-size: 10px; }
+.pt-cp-boxes { flex: 1 1 0; min-width: 0; display: flex; align-items: flex-end; gap: 4px; }
+.pt-cp-f { flex: 1 1 0; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pt-cp-f > span { font-size: 8.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--pt-text-faint); text-align: center; }
+.pt-cp-f input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 3px; text-align: center; border-radius: 8px; border: 1px solid var(--pt-glass-brd-strong); background: color-mix(in srgb, var(--pt-text) 9%, transparent); color: var(--pt-text); font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; outline: none; }
+.pt-cp-f input:focus { border-color: var(--pt-accent); }
+.pt-cp-wide { flex: 2.2 1 0; }
+.pt-cp-a { flex: 1.2 1 0; }
+
+/* remembered swatches */
+.pt-cp-recent { margin-top: 12px; }
+.pt-cp-recent[hidden] { display: none; }
+.pt-cp-recent-title { font-size: 9px; text-transform: uppercase; letter-spacing: .6px; color: var(--pt-text-dim); margin-bottom: 7px; }
+.pt-cp-recent-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+.pt-cp-sw { width: 100%; aspect-ratio: 1; padding: 0; border-radius: 6px; cursor: pointer; background: var(--sw); border: 1px solid var(--pt-glass-brd-strong); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); transition: transform .1s; }
+.pt-cp-sw:hover { transform: scale(1.12); border-color: var(--pt-glass-brd-strong); }
+
 /* toast */
 #pt-confirm { position: fixed; inset: 0; z-index: 190; display: grid; place-items: center; background: rgba(0, 0, 0, 0.28); }
 #pt-confirm[hidden] { display: none; }
@@ -526,8 +604,10 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 /* surface reflex stack (the pen's .switcher) */
 #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-toast, #pt-tip, .pt-confirm-card, .pt-sheet-card {
-  /* Backing: a solid legibility layer under the glass tint (JS sets color + amount) */
-  background-image: linear-gradient(color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent), color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent));
+  /* Shine: a directional gloss the light angle points; over the Backing (a solid legibility layer under the tint) */
+  background-image:
+    linear-gradient(calc(var(--glass-light-angle, 145) * 1deg + 180deg), color-mix(in srgb, var(--c-light) calc(var(--glass-shine, 0) * 0.85%), transparent) 0%, color-mix(in srgb, var(--c-light) calc(var(--glass-shine, 0) * 0.22%), transparent) 26%, transparent 55%),
+    linear-gradient(color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent), color-mix(in srgb, var(--glass-backing-color, #000) var(--glass-backing, 35%), transparent));
   border-color: transparent;
   box-shadow:
     inset 0 0 0 1px       color-mix(in srgb, var(--c-light) calc(var(--glass-reflex-light) * 10%), transparent),
@@ -542,6 +622,9 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
     0 6px 16px 0           color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 8%), transparent),
     0 14px 36px -6px       color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 16%), transparent);   /* so the Shadow dial reads on dark grounds too */
 }
+
+/* Corner radius: the glass panels round to taste (the toolbar keeps its concentric radius) */
+.pt-menu-pop, #pt-ctx, .pt-dim-pop, .pt-omni-results, .pt-modal, .pt-confirm-card, .pt-sheet-card { border-radius: var(--glass-radius, 18px); }
 
 /* control reflex stack (the pen's inner pill) */
 .pt-rbtn, .pt-dim-trigger, .pt-omni input {

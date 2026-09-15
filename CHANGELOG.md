@@ -5,6 +5,17 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+### Added
+- The **Appearance** panel is a collapsible section now, and it remembers whether you left it open.
+- Three new glass dials under Appearance: **Shine** (a gloss the light angle points across the glass), **Light angle** (where the light comes from — 0° is straight above), and **Corner radius** (how round the glass panels are; the toolbar keeps its concentric shape). All ship in the copied `config.js` and default to the current look.
+- A built-in **glass color picker** replaces the browser's default color dialog on every swatch (Pattern, Background, Accent, Tint, and first-run Accent). Drag the saturation/brightness square, slide the hue and — where it applies — opacity, or type a value; recently used colors are remembered across sessions.
+- The picker's value reads in **HEX, RGB, HSL, HSB, or CSS** (the CSS field takes any CSS color, named colors included). HEX is the default and the tool remembers the format you last chose. A **copy button** to the right of the boxes copies the value to the clipboard.
+- An **eyedropper** in the picker samples a color from anywhere on screen — outside the browser window included — in browsers that support it (Chrome, Edge, and other Chromium browsers). Where the browser has no such capability (Firefox, Safari), the eyedropper is hidden, since no web page can read pixels outside itself there.
+
+### Fixed
+- The stage is now a plain **rounded rectangle at every size** — desktop sizes no longer square off their top corners. With rulers on, the three corners the ruler strips run past (top-left, **top-right**, and bottom-left) go flat and only the free bottom-right corner keeps its radius.
+- The **stage message overlays** ("This page can't be framed") are readable again: they now carry their own near-opaque, theme-aware surface and ink, so turning the glass opacity down no longer makes them wash out, and each is topped with a ghosted Infospector glyph.
+
 ## [0.5.1] — 2026-09-14
 
 ### Fixed

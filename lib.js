@@ -4,11 +4,12 @@
  */
 
 /* ---------------- stage shapes ---------------- */
-// rulers on: the left edge (top-left + bottom-left) squares off to meet the vertical ruler
+// A plain rounded rectangle, whatever the shape. With rulers on, the top and left
+// strips butt against three corners — top-left, top-right, bottom-left — so those
+// square off; only the free bottom-right corner keeps its radius.
 export function radiusCss(shape, s, rulers) {
   const r = Math.round(shape.r * s * 10) / 10;
-  if (shape.shape !== 'device') return rulers ? `0 0 ${r}px 0` : `0 0 ${r}px ${r}px`;
-  return rulers ? `0 ${r}px ${r}px 0` : `${r}px`;
+  return rulers ? `0 0 ${r}px 0` : `${r}px`;
 }
 // tick spacing so minor ticks are ≥6px and labeled ticks ≥60px on screen, at any zoom
 export function tickSteps(s) {
