@@ -17,7 +17,8 @@ import { resolveStore, emptyDoc } from './adapters.js';
  */
 const BROWSER_R = 10;
 import * as L from './lib.js';
-const { radiusCss, STATES, STATE_COLORS, LEGACY_STATES, normState, tickSteps, hslOf, forTheme, lumOf, mixCss, contrast, hsbToHex, formatColor, humanize, isUrlish, toHex, rgbOf } = L;
+import { attachColorPicker } from './colorpicker.js';
+const { radiusCss, STATES, STATE_COLORS, LEGACY_STATES, normState, tickSteps, hslOf, forTheme, lumOf, mixCss, contrast, hsbToHex, formatColor, humanize, isUrlish, toHex, rgbOf, parseRgb } = L;
 const migrate = (doc) => L.migrate(doc, uid);
 const parseColor = (str) => L.parseColor(str, (v) => !!(window.CSS && CSS.supports('color', v)));
 const shortUrl = (u) => L.shortUrl(u, location.origin);
@@ -99,8 +100,9 @@ const el = {
   gaps: $('pt-gaps'), rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
   colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), colAccent: $('pt-col-accent'), colAccentTxt: $('pt-col-accent-txt'),
-  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'),
+  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'), apToggle: $('pt-ap-toggle'), apPop: $('pt-ap-pop'), ctxClose: $('pt-ctx-close'),
   apBlur: $('pt-ap-blur'), apBacking: $('pt-ap-backing'), apSat: $('pt-ap-sat'), apLight: $('pt-ap-light'), apDark: $('pt-ap-dark'), apTint: $('pt-ap-tint'), apColor: $('pt-ap-color'), apColorTxt: $('pt-ap-color-txt'), apReset: $('pt-ap-reset'),
+  apShine: $('pt-ap-shine'), apShade: $('pt-ap-shade'), apLightAngle: $('pt-ap-lightangle'), apRadius: $('pt-ap-radius'), apPad: $('pt-ap-pad'),
   modals: $('pt-modals'), toast: $('pt-toast')
 };
 
@@ -263,8 +265,8 @@ function anchorPop(pop, anchor, { align = 'left', width = null, above = false } 
   const x = align === 'right' ? r.right - pw : align === 'center' ? r.left + r.width / 2 - pw / 2 : r.left;
   pop.style.left = Math.max(8, Math.min(x, window.innerWidth - pw - 8)) + 'px';
 }
-function openDim() { syncDimActive(); showPop(el.dimPop); anchorPop(el.dimPop, el.dimTrigger); el.dimVal.setAttribute('aria-expanded', 'true'); }
-function closeDim() { hidePop(el.dimPop); el.dimVal.setAttribute('aria-expanded', 'false'); }
+function openDim() { syncDimActive(); showPop(el.dimPop); anchorPop(el.dimPop, el.dimTrigger); el.dimVal.setAttribute('aria-expanded', 'true'); el.dimChev.setAttribute('aria-expanded', 'true'); }
+function closeDim() { hidePop(el.dimPop); el.dimVal.setAttribute('aria-expanded', 'false'); el.dimChev.setAttribute('aria-expanded', 'false'); }
 function syncDimActive() {
   el.dimPop.querySelectorAll('.pt-dim-row').forEach((r) => {
     const active = (state.fillMode && r.dataset.fill === '1') ||
@@ -350,9 +352,9 @@ function setFrameMode(m) {
 async function onFrameLoad() {
   clearTimeout(state.loadTimer);
   if (!state.url) return;
-  el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.remove('pt-show');
   let doc = null; try { doc = el.frame.contentDocument; } catch (e) { doc = null; }
-  if (doc && doc.location && doc.location.href === 'about:blank') return;   // the blank hop of a forced reload
+  if (doc && doc.location && doc.location.href === 'about:blank') return;   // the blank hop of a forced reload — leave overlays as they are
+  el.ovEmpty.classList.remove('pt-show'); el.ovBlocked.classList.remove('pt-show');
   if (!doc) { setFrameMode('viewonly'); pushHistory(state.url); await switchPage(state.url); return; }
   setFrameMode('full');
   try { const win = el.frame.contentWindow; if (!win.__ptInspector) { const s = doc.createElement('script'); s.src = PT_BASE + 'inspector.js'; doc.body.appendChild(s); } } catch (e) { setFrameMode('viewonly'); }
@@ -952,7 +954,7 @@ function startGuideFromRuler(axis, e) {
 
 const BG_KEY = 'pt:bg', DEFAULTS_KEY = 'pt:defaults';
 const BG_BASE = { pattern: 'dots', opacity: 50, patternColor: null, groundColor: null, patternTheme: null, groundTheme: null, accent: null };
-const GLASS_BASE = { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null };
+const GLASS_BASE = { blur: null, sat: null, light: null, dark: null, tint: null, color: null, colorTheme: null, backing: null, shine: null, shade: null, lightAngle: null, radius: null, pad: null };
 // UI ink by formula, not by theme: estimate the glass surface (ground ← tint at its opacity ←
 // backing) and take whichever of black/white contrasts more with it (WCAG). Labels and section
 // headers are that ink at 90%, faint text at 65%.
@@ -1145,6 +1147,7 @@ function loadBg() {
 // ---- color helpers: chips need hex; the text field takes hex / rgb() / hsl() / hsb() ----
 // ---- color formats: fields display in the chosen notation; input still accepts any ----
 const FMT_KEY = 'pt:colorfmt';
+const AP_OPEN_KEY = 'pt:appearance-open';
 function colorFmt() { try { return localStorage.getItem(FMT_KEY) || 'hex'; } catch (e) { return 'hex'; } }
 
 function syncColorInputs() {
@@ -1164,7 +1167,7 @@ function syncColorInputs() {
 /* ---------------- appearance (the glass recipe's dials) ---------------- */
 
 const GLASS_KEY = 'pt:glass';
-const GLASS_DEFAULTS = { blur: 8, sat: 150, tint: 14, color: '#bbbbbc', backing: 35 };   // light/dark reflex defaults come from the theme
+const GLASS_DEFAULTS = { blur: 8, sat: 150, tint: 14, color: '#bbbbbc', backing: 35, shine: 0, shade: 0, lightAngle: 145, radius: 40, pad: 8 };   // light/dark reflex defaults come from the theme
 
 function applyGlass() {
   const g = state.glass, root = document.documentElement.style;
@@ -1175,6 +1178,11 @@ function applyGlass() {
   set('--glass-reflex-dark', g.dark);
   set('--glass-tint', g.tint == null ? null : g.tint + '%');
   set('--glass-tint-2', g.tint == null ? null : Math.min(100, g.tint + 22) + '%');  // controls sit ~22 points denser than surfaces
+  set('--glass-shine', g.shine == null ? null : String(g.shine));
+  set('--glass-shade', g.shade == null ? null : String(g.shade));
+  set('--glass-light-angle', g.lightAngle == null ? null : String(g.lightAngle));
+  set('--glass-radius', g.radius == null ? null : g.radius + 'px');
+  set('--glass-pad', g.pad == null ? null : g.pad + 'px');
   const th = currentTheme(), tintCss = forTheme(g.color, g.colorTheme, th);
   set('--c-glass', tintCss);
   const tintFx = tintCss || getComputedStyle(document.documentElement).getPropertyValue('--c-glass').trim() || GLASS_DEFAULTS.color;
@@ -1196,11 +1204,17 @@ function syncGlassInputs() {
   const dark = num(g.dark, parseFloat(cs.getPropertyValue('--glass-reflex-dark')));
   const tint = num(g.tint, parseFloat(cs.getPropertyValue('--glass-tint')) || GLASS_DEFAULTS.tint);
   const backing = num(g.backing, GLASS_DEFAULTS.backing);
+  const shine = num(g.shine, GLASS_DEFAULTS.shine);
+  const shade = num(g.shade, GLASS_DEFAULTS.shade);
+  const lightAngle = num(g.lightAngle, GLASS_DEFAULTS.lightAngle);
+  const radius = num(g.radius, GLASS_DEFAULTS.radius);
+  const pad = num(g.pad, GLASS_DEFAULTS.pad);
   const color = cs.getPropertyValue('--c-glass').trim() || GLASS_DEFAULTS.color;   // effective (theme-adjusted)
   const put = (inp, out, v, unit) => { inp.value = v; out.textContent = (Number.isInteger(v) ? v : v.toFixed(1)) + unit; };
   put(el.apBlur, $('pt-ap-blur-val'), blur, 'px'); put(el.apSat, $('pt-ap-sat-val'), sat, '%');
   put(el.apLight, $('pt-ap-light-val'), light, '×'); put(el.apDark, $('pt-ap-dark-val'), dark, '×');
   put(el.apTint, $('pt-ap-tint-val'), tint, '%'); put(el.apBacking, $('pt-ap-backing-val'), backing, '%');
+  put(el.apShine, $('pt-ap-shine-val'), shine, ''); put(el.apShade, $('pt-ap-shade-val'), shade, ''); put(el.apLightAngle, $('pt-ap-lightangle-val'), lightAngle, '°'); put(el.apRadius, $('pt-ap-radius-val'), radius, 'px'); put(el.apPad, $('pt-ap-pad-val'), pad, 'px');
   el.apColor.value = toHex(color); if (document.activeElement !== el.apColorTxt) el.apColorTxt.value = formatColor(color, colorFmt());
   el.apColorTxt.classList.remove('pt-invalid');
   updateSliderFills();
@@ -1226,7 +1240,24 @@ function openCtx(x, y) {
   el.ctx.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + 'px';
   el.ctx.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + 'px';
 }
-function closeCtx() { hidePop(el.ctx, { attr: true }); }
+function closeCtx() { hidePop(el.ctx, { attr: true }); closeApPop(); }
+
+// Material & Light flyout: sits beside the context panel on whichever side has room, clamped on-screen
+function placeApPop() {
+  const pop = el.apPop, ctx = el.ctx.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight, gap = 6, m = 8;
+  const roomRight = window.innerWidth - ctx.right - gap - m, roomLeft = ctx.left - gap - m;
+  let left;
+  if (pw <= roomRight) left = ctx.right + gap;                 // prefer the right
+  else if (pw <= roomLeft) left = ctx.left - gap - pw;          // else the left
+  else left = roomRight >= roomLeft ? window.innerWidth - pw - m : m;   // neither fits: hug the roomier side
+  left = Math.max(m, Math.min(left, window.innerWidth - pw - m));
+  let top = Math.min(el.apToggle.getBoundingClientRect().top, ctx.top);   // line up near the trigger
+  top = Math.max(m, Math.min(top, window.innerHeight - ph - m));          // never off-screen
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+}
+function openApPop() { syncGlassInputs(); showPop(el.apPop); placeApPop(); requestAnimationFrame(placeApPop); el.apToggle.setAttribute('aria-expanded', 'true'); }
+function closeApPop() { if (el.apPop.classList.contains('pt-open')) hidePop(el.apPop); el.apToggle.setAttribute('aria-expanded', 'false'); }
 
 function toggleInspectShortcut() { if (!el.inspect.disabled) setInspect(state.mode !== 'inspect'); }
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -1283,7 +1314,11 @@ function bindRulersAndBg() {
     if (!t.closest('.pt-modal, #pt-selbox, #pt-gbox, #pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, #pt-confirm, .pt-sheet, #pt-gaps, #pt-keys-btn, #pt-tip')) { hideOpenModals(); if (state.selected && !t.closest('.pt-guide, .pt-ruler, #pt-ruler-corner')) hideSelbox(); }   // …but not a press on a guide or a ruler: wrap guides belong to the selection and would vanish under the click
   }, true);
   el.stagewrap.addEventListener('contextmenu', (e) => { if (e.target !== el.stagewrap) return; e.preventDefault(); openCtx(e.clientX, e.clientY); });
-  document.addEventListener('pointerdown', (e) => { if (!el.ctx.hidden && !el.ctx.contains(e.target)) closeCtx(); }, true);
+  document.addEventListener('pointerdown', (e) => {
+    const t = e.target, inCtx = el.ctx.contains(t), inFlyout = el.apPop.contains(t);
+    if (el.apPop.classList.contains('pt-open') && !inFlyout && !el.apToggle.contains(t)) closeApPop();   // a press outside the flyout (its trigger aside) closes it
+    if (!el.ctx.hidden && !inCtx && !inFlyout) closeCtx();                                                // …but a press in the flyout keeps the panel open
+  }, true);
   const segIcons = { dots: ICONS.grip, grid: ICONS.grid3, lines: ICONS.diagonal, none: ICONS.ban };
   el.ctx.querySelectorAll('[data-bg]').forEach((b) => { b.innerHTML = segIcons[b.dataset.bg] || ''; b.addEventListener('click', () => { state.bg.pattern = b.dataset.bg; applyBg(); }); });
   el.bgOpacity.addEventListener('input', () => { state.bg.opacity = Number(el.bgOpacity.value); applyBg(); });
@@ -1299,11 +1334,34 @@ function bindRulersAndBg() {
   // Appearance sliders drive the glass recipe live
   const slide = (inp, key, parse) => inp.addEventListener('input', () => { state.glass[key] = parse(inp.value); applyGlass(); });
   slide(el.apBlur, 'blur', Number); slide(el.apSat, 'sat', Number); slide(el.apBacking, 'backing', Number); slide(el.apLight, 'light', Number); slide(el.apDark, 'dark', Number); slide(el.apTint, 'tint', Number);
+  slide(el.apShine, 'shine', Number); slide(el.apShade, 'shade', Number); slide(el.apLightAngle, 'lightAngle', Number); slide(el.apRadius, 'radius', Number); slide(el.apPad, 'pad', Number);
   el.apColor.addEventListener('input', () => { state.glass.color = el.apColor.value; state.glass.colorTheme = currentTheme(); applyGlass(); });
   el.apColorTxt.addEventListener('change', () => { const v = parseColor(el.apColorTxt.value); if (!v) { el.apColorTxt.classList.add('pt-invalid'); return; } state.glass.color = v; state.glass.colorTheme = currentTheme(); applyGlass(); });
+  // the glass color picker replaces the OS color dialog on every swatch: it reads the
+  // paired text field (so alpha survives) and writes back through the same events the
+  // native inputs already fire, so all the wiring above runs unchanged.
+  const bindPicker = (swatch, txt, alpha) => {
+    if (!swatch) return;
+    attachColorPicker(swatch, {
+      alpha,
+      read: () => { const t = txt && txt.value.trim(); return (t && parseRgb(t)) ? t : swatch.value; },
+      write: (v) => {
+        const rgb = parseRgb(v);
+        if (alpha && txt && rgb && rgb.a != null && rgb.a < 1) { txt.value = v; txt.dispatchEvent(new Event('change', { bubbles: true })); }
+        else { swatch.value = toHex(v); swatch.dispatchEvent(new Event('input', { bubbles: true })); }
+      },
+    });
+  };
+  bindPicker(el.colPattern, el.colPatternTxt, true);
+  bindPicker(el.colGround, el.colGroundTxt, true);
+  bindPicker(el.colAccent, el.colAccentTxt, false);   // accent is a solid highlight — no alpha
+  bindPicker(el.apColor, el.apColorTxt, true);
+  bindPicker($('pt-setup-accent'), $('pt-setup-accent-txt'), false);
   el.colFmt.addEventListener('change', () => { try { localStorage.setItem(FMT_KEY, el.colFmt.value); } catch (e) { /* ignore */ } syncColorInputs(); syncGlassInputs(); });
   el.apReset.addEventListener('click', resetToDefaults);
   el.apSave.addEventListener('click', saveAsDefaults);
+  // Material & Light opens as a side flyout (the context panel is too tall to hold it inline)
+  el.apToggle.addEventListener('click', () => { el.apPop.classList.contains('pt-open') ? closeApPop() : openApPop(); });
   el.apCopy.addEventListener('click', () => { copyText(configSnippet()); closeCtx(); });
   document.querySelectorAll('.pt-ctx-range input[type="range"]').forEach((inp) => inp.addEventListener('input', updateSliderFills));
   loadBg();
@@ -1509,7 +1567,10 @@ function bindTips() {
 
 function bind() {
   el.rotate.innerHTML = ICONS.arrowLeftRight; el.inspect.innerHTML = ICONS.inspectGlyph; el.shot.innerHTML = ICONS.camera;
+  // a ghosted Infospector glyph tops every empty/message overlay on the stage
+  document.querySelectorAll('.pt-overlay > div').forEach((d) => d.insertAdjacentHTML('afterbegin', `<span class="pt-overlay-glyph" aria-hidden="true">${ICONS.inspectGlyph}</span>`));
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
+  el.ctxClose.innerHTML = ICONS.x; el.ctxClose.addEventListener('click', closeCtx);   // ✕ in the context panel's corner
   el.apReset.innerHTML = ICONS.rotateCcw;
   $('pt-g-note').innerHTML = ICONS.notebookPen; $('pt-g-del').innerHTML = ICONS.trash; $('pt-g-clear').innerHTML = ICONS.shredder;
   $('pt-keys-btn').innerHTML = ICONS.keyboard; buildKeysList();

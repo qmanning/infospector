@@ -23,7 +23,7 @@
           <span class="pt-times">×</span>
           <input id="pt-dim-h" type="number" min="200" max="7680" aria-label="Height" />
         </span>
-        <button class="pt-chev" id="pt-dim-chev" aria-label="Choose a size" aria-haspopup="true" data-tip="Choose a size">▾</button>
+        <button class="pt-chev" id="pt-dim-chev" aria-label="Choose a size" aria-haspopup="true" aria-expanded="false" data-tip="Choose a size"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
       </div>
     </div>
 
@@ -134,6 +134,7 @@
 
   <!-- right-click menu for the background -->
   <div id="pt-ctx" hidden>
+    <button type="button" id="pt-ctx-close" aria-label="Close" data-tip="Close"></button>
     <div class="pt-ctx-title">Background</div>
     <div class="pt-seg" id="pt-bg-seg" role="radiogroup" aria-label="Background pattern">
       <span class="pt-seg-ind"></span>
@@ -156,13 +157,22 @@
     <label class="pt-ctx-color" data-tip="The stage size Infospector opens with"><span>Size</span><select class="pt-fmt pt-start-select" id="pt-start-size" aria-label="Start-up size"></select></label>
     <label class="pt-ctx-color" data-tip="The page Infospector opens with (a path on this site, or a full URL)"><span>Page</span><input type="text" id="pt-start-page" placeholder="/" spellcheck="false" aria-label="Start-up page" /></label>
     <div class="pt-menu-div"></div>
-    <div class="pt-ctx-title">Appearance</div>
+    <button type="button" class="pt-ctx-sub" id="pt-ap-toggle" aria-haspopup="menu" aria-expanded="false">Material &amp; Light<span class="pt-ctx-sub-caret" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span></button>
+  </div>
+
+  <div class="pt-menu-pop pt-ap-pop" id="pt-ap-pop" role="menu" aria-label="Material &amp; Light">
+    <div class="pt-ctx-title">Material &amp; Light</div>
+    <label class="pt-ctx-range" data-tip="How round the glass panels are (the toolbar keeps its own shape)"><span>Radius</span><input type="range" id="pt-ap-radius" min="0" max="60" step="1" /><output id="pt-ap-radius-val"></output></label>
+    <label class="pt-ctx-range" data-tip="Padding inside the toolbar and menus — the inner corners stay concentric"><span>Padding</span><input type="range" id="pt-ap-pad" min="0" max="20" step="1" /><output id="pt-ap-pad-val"></output></label>
     <label class="pt-ctx-range"><span>Blur</span><input type="range" id="pt-ap-blur" min="0" max="100" step="1" /><output id="pt-ap-blur-val"></output></label>
     <label class="pt-ctx-range"><span>Saturation</span><input type="range" id="pt-ap-sat" min="100" max="250" step="5" /><output id="pt-ap-sat-val"></output></label>
     <label class="pt-ctx-range"><span>Highlight</span><input type="range" id="pt-ap-light" min="0" max="2" step="0.1" /><output id="pt-ap-light-val"></output></label>
-    <label class="pt-ctx-range"><span>Shadow</span><input type="range" id="pt-ap-dark" min="0" max="3" step="0.1" /><output id="pt-ap-dark-val"></output></label>
+    <label class="pt-ctx-range" data-tip="How far the glass's drop shadow spreads"><span>Distance</span><input type="range" id="pt-ap-dark" min="0" max="3" step="0.1" /><output id="pt-ap-dark-val"></output></label>
     <label class="pt-ctx-range"><span>Opacity</span><input type="range" id="pt-ap-tint" min="0" max="100" step="1" /><output id="pt-ap-tint-val"></output></label>
     <label class="pt-ctx-range" data-tip="A solid layer of the tint color under the glass — text flips dark/light to stay legible"><span>Backing</span><input type="range" id="pt-ap-backing" min="0" max="100" step="5" /><output id="pt-ap-backing-val"></output></label>
+    <label class="pt-ctx-range" data-tip="A light the angle points across the glass, from the lit side"><span>Shine</span><input type="range" id="pt-ap-shine" min="0" max="100" step="1" /><output id="pt-ap-shine-val"></output></label>
+    <label class="pt-ctx-range" data-tip="A darkness on the far side of the glass, opposite the shine"><span>Shadow</span><input type="range" id="pt-ap-shade" min="0" max="100" step="1" /><output id="pt-ap-shade-val"></output></label>
+    <label class="pt-ctx-range" data-tip="Where the light comes from. 0° is straight above."><span>Angle</span><input type="range" id="pt-ap-lightangle" min="0" max="360" step="1" /><output id="pt-ap-lightangle-val"></output></label>
     <label class="pt-ctx-color"><span>Tint color</span><input type="color" id="pt-ap-color" aria-label="Glass tint color" /><input type="text" id="pt-ap-color-txt" placeholder="#hex · hsl() · hsb()" spellcheck="false" aria-label="Glass tint color value" /></label>
     <div class="pt-ctx-actions">
       <button class="pt-mini pt-icon-btn" id="pt-ap-reset" aria-label="Reset to Default" data-tip="Reset to Default"></button>

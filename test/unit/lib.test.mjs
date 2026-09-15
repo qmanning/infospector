@@ -2,11 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as L from '../../lib.js';
 
-test('radiusCss: browser windows round only the bottom; rulers square the left edge', () => {
-  assert.equal(L.radiusCss({ shape: 'browser', r: 10 }, 1, false), '0 0 10px 10px');
+test('radiusCss: a rounded rectangle; rulers square every corner but bottom-right', () => {
+  assert.equal(L.radiusCss({ shape: 'browser', r: 10 }, 1, false), '10px');
   assert.equal(L.radiusCss({ shape: 'browser', r: 10 }, 1, true), '0 0 10px 0');
   assert.equal(L.radiusCss({ shape: 'device', r: 44 }, 0.5, false), '22px');
-  assert.equal(L.radiusCss({ shape: 'device', r: 44 }, 0.5, true), '0 22px 22px 0');
+  assert.equal(L.radiusCss({ shape: 'device', r: 44 }, 0.5, true), '0 0 22px 0');
 });
 
 test('tickSteps: minor ticks ≥6px, labeled ticks ≥60px, majors are multiples of minors', () => {

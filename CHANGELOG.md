@@ -5,6 +5,24 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 
 ## [Unreleased]
 
+### Added
+- The glass controls live in a **Material & Light** flyout — the context panel stays short, and picking "Material & Light" opens the sliders in a side panel that lands on whichever side has room and never runs off-screen.
+- Directional lighting for the glass under Appearance: **Shine** (a light on the lit side), **Shadow** (a darkness on the far side), and one **Angle** that points both (0° is straight above), plus a **Radius** dial for how round the glass panels are (the toolbar keeps its concentric shape). The old drop-shadow dial is now named **Distance**. All ship in the copied `config.js` and default to the current look.
+- A built-in **glass color picker** replaces the browser's default color dialog on every swatch (Pattern, Background, Accent, Tint, and first-run Accent). Drag the saturation/brightness square, slide the hue and — where it applies — opacity, or type a value; recently used colors are remembered across sessions.
+- The picker's value reads in **HEX, RGB, HSL, HSB, or CSS** (the CSS field takes any CSS color, named colors included). HEX is the default and the tool remembers the format you last chose. A **copy button** to the right of the boxes copies the value to the clipboard.
+- An **eyedropper** in the picker samples a color from anywhere on screen — outside the browser window included — in browsers that support it (Chrome, Edge, and other Chromium browsers). Where the browser has no such capability (Firefox, Safari), the eyedropper is hidden, since no web page can read pixels outside itself there.
+- A **Padding** dial (under Radius) for the space inside the toolbar and menus.
+- A **✕** in the context panel's top-right corner closes it (and any open flyout).
+
+### Changed
+- The chrome's corners are now **concentric by formula**: one **Radius** and **Padding** drive every nested corner. In the menus and context panel an inner item rounds to `radius − padding − border`; in the toolbar, the buttons, size selector and URL bar round to the Radius (capped at a full 18px pill) and the bar wraps them at `item + padding + border` — so dialing Radius reshapes the whole chrome together, and it stays concentric at any padding.
+- The size dropdown's chevron is a lucide chevron (rotates up when open); more room between the dimensions and the scale %, less between the % and the chevron.
+- New defaults: **Radius 40px** and **Padding 8px** (the Radius dial now runs to 60). The toolbar stays a full pill either way — its items cap at 18px.
+
+### Fixed
+- The stage is now a plain **rounded rectangle at every size** — desktop sizes no longer square off their top corners. With rulers on, the three corners the ruler strips run past (top-left, **top-right**, and bottom-left) go flat and only the free bottom-right corner keeps its radius.
+- The **stage message overlays** ("This page can't be framed") are readable again: they now carry their own near-opaque, theme-aware surface and ink, so turning the glass opacity down no longer makes them wash out, and each is topped with a ghosted Infospector glyph.
+
 ## [0.5.1] — 2026-09-14
 
 ### Fixed
