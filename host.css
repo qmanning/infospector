@@ -132,7 +132,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 /* Custom mode: the numbers become two live inputs */
 .pt-dim-inputs { display: none; align-items: center; gap: 4px; padding-left: 4px; }
 .pt-dim-inputs input {
-  width: 58px; height: 28px; text-align: center; border-radius: 13px;   /* 18 − 4 inset − 1 border */
+  width: 58px; height: 28px; text-align: center; border-radius: 14px;   /* concentric: 18 − 4px inset = 14 (a full pill, matching the trigger stadium) */
   border: 1px solid var(--pt-glass-brd-strong); background: color-mix(in srgb, var(--pt-text) 9%, transparent);
   color: var(--pt-text); font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; outline: none;
   -moz-appearance: textfield;

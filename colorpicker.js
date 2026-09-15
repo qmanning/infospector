@@ -44,7 +44,8 @@ let session = null;      // { input, alpha, onChange, anchor }
 let onDocDown = null, onKeyDown = null;
 
 const SVG = {
-  eyedropper: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 1-4 9.5-9.5"/><path d="M14.5 6.5 17 4a2.1 2.1 0 0 1 3 3l-2.5 2.5"/><path d="m13 8 3 3"/></svg>',
+  // lucide "pipette"
+  eyedropper: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 9-8.414 8.414A2 2 0 0 0 3 18.828v1.344a2 2 0 0 1-.586 1.414A2 2 0 0 1 3.828 21h1.344a2 2 0 0 0 1.414-.586L15 12"/><path d="m18 9 .4.4a1 1 0 1 1-3 3l-3.8-3.8a1 1 0 1 1 3-3l.4.4 3.4-3.4a1 1 0 1 1 3 3z"/><path d="m2 22 .414-.414"/></svg>',
 };
 
 function build() {
