@@ -1544,6 +1544,8 @@ function bindTips() {
 
 function bind() {
   el.rotate.innerHTML = ICONS.arrowLeftRight; el.inspect.innerHTML = ICONS.inspectGlyph; el.shot.innerHTML = ICONS.camera;
+  // a ghosted Infospector glyph tops every empty/message overlay on the stage
+  document.querySelectorAll('.pt-overlay > div').forEach((d) => d.insertAdjacentHTML('afterbegin', `<span class="pt-overlay-glyph" aria-hidden="true">${ICONS.inspectGlyph}</span>`));
   el.omniIcon.innerHTML = ICONS.search; el.omniClear.innerHTML = ICONS.x;
   el.apReset.innerHTML = ICONS.rotateCcw;
   $('pt-g-note').innerHTML = ICONS.notebookPen; $('pt-g-del').innerHTML = ICONS.trash; $('pt-g-clear').innerHTML = ICONS.shredder;

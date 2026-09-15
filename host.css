@@ -132,7 +132,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-dim-trigger:hover { border-color: var(--pt-glass-brd-strong); }
 .pt-dim-trigger.pt-fit-glow { border-color: var(--pt-fit); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pt-fit) 30%, transparent); }
 .pt-dim-scale { margin-left: 6px; font-weight: 600; color: var(--pt-fit); }   /* "· 74%" while fitting, in the fit orange */
-.pt-dim-val, .pt-chev { height: 28px; border: none; background: transparent; color: var(--pt-text); cursor: pointer; border-radius: 14px; }
+.pt-dim-val, .pt-chev { height: 28px; border: none; background: transparent; color: var(--pt-text); cursor: pointer; border-radius: 999px; }
 .pt-dim-val { padding: 0 6px 0 9px; font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; }
 .pt-dim-val:hover { background: var(--pt-glass); }
 .pt-chev { width: 24px; color: var(--pt-text-faint); font-size: 10px; }
@@ -140,7 +140,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 /* Custom mode: the numbers become two live inputs */
 .pt-dim-inputs { display: none; align-items: center; gap: 4px; }   /* no extra left pad — the group sits an even 5px inside the trigger, like the readout */
 .pt-dim-inputs input {
-  width: 58px; height: 28px; text-align: center; border-radius: 14px;   /* concentric with the 18px stadium: full pills, an even ~5px gap all round */
+  width: 58px; height: 28px; text-align: center; border-radius: 999px;   /* full pills, like the stadium trigger they nest in (an even ~5px gap all round) */
   border: 1px solid var(--pt-glass-brd-strong); background: color-mix(in srgb, var(--pt-text) 9%, transparent);
   color: var(--pt-text); font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; outline: none;
   -moz-appearance: textfield;
@@ -349,6 +349,8 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-overlay h2 { color: var(--pt-overlay-fg); font-size: 15px; margin: 0 0 6px; }
 .pt-overlay p { margin: 0 auto; max-width: 340px; font-size: 12.5px; line-height: 1.6; }
 .pt-overlay code { background: color-mix(in srgb, var(--pt-overlay-fg) 12%, transparent); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.pt-overlay-glyph { display: block; width: 64px; height: 64px; margin: 0 auto 16px; color: var(--pt-overlay-fg); opacity: 0.18; }   /* ghosted Infospector mark */
+.pt-overlay-glyph svg { display: block; width: 100%; height: 100%; }
 
 .pt-handle { position: absolute; z-index: 30; width: 11px; height: 11px; background: var(--pt-accent); border: 1.5px solid #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.35); opacity: 0; transition: opacity 140ms; }
 #pt-stage.pt-edge-hover .pt-handle, .pt-handle.pt-dragging { opacity: 1; }
