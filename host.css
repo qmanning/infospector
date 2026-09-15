@@ -349,7 +349,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-overlay h2 { color: var(--pt-overlay-fg); font-size: 15px; margin: 0 0 6px; }
 .pt-overlay p { margin: 0 auto; max-width: 340px; font-size: 12.5px; line-height: 1.6; }
 .pt-overlay code { background: color-mix(in srgb, var(--pt-overlay-fg) 12%, transparent); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
-.pt-overlay-glyph { display: block; width: 64px; height: 64px; margin: 0 auto 16px; color: var(--pt-overlay-fg); opacity: 0.18; }   /* ghosted Infospector mark */
+.pt-overlay-glyph { display: block; width: 62px; height: 62px; margin: 0 auto 16px; color: var(--pt-overlay-fg); opacity: 0.18; }   /* ghosted Infospector mark */
 .pt-overlay-glyph svg { display: block; width: 100%; height: 100%; }
 
 .pt-handle { position: absolute; z-index: 30; width: 11px; height: 11px; background: var(--pt-accent); border: 1.5px solid #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.35); opacity: 0; transition: opacity 140ms; }
