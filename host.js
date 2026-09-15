@@ -265,8 +265,8 @@ function anchorPop(pop, anchor, { align = 'left', width = null, above = false } 
   const x = align === 'right' ? r.right - pw : align === 'center' ? r.left + r.width / 2 - pw / 2 : r.left;
   pop.style.left = Math.max(8, Math.min(x, window.innerWidth - pw - 8)) + 'px';
 }
-function openDim() { syncDimActive(); showPop(el.dimPop); anchorPop(el.dimPop, el.dimTrigger); el.dimVal.setAttribute('aria-expanded', 'true'); }
-function closeDim() { hidePop(el.dimPop); el.dimVal.setAttribute('aria-expanded', 'false'); }
+function openDim() { syncDimActive(); showPop(el.dimPop); anchorPop(el.dimPop, el.dimTrigger); el.dimVal.setAttribute('aria-expanded', 'true'); el.dimChev.setAttribute('aria-expanded', 'true'); }
+function closeDim() { hidePop(el.dimPop); el.dimVal.setAttribute('aria-expanded', 'false'); el.dimChev.setAttribute('aria-expanded', 'false'); }
 function syncDimActive() {
   el.dimPop.querySelectorAll('.pt-dim-row').forEach((r) => {
     const active = (state.fillMode && r.dataset.fill === '1') ||

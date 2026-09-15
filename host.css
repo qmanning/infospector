@@ -131,11 +131,13 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 }
 .pt-dim-trigger:hover { border-color: var(--pt-glass-brd-strong); }
 .pt-dim-trigger.pt-fit-glow { border-color: var(--pt-fit); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pt-fit) 30%, transparent); }
-.pt-dim-scale { margin-left: 6px; font-weight: 600; color: var(--pt-fit); }   /* "· 74%" while fitting, in the fit orange */
+.pt-dim-scale { margin-left: 10px; font-weight: 600; color: var(--pt-fit); }   /* "· 74%" while fitting, in the fit orange — roomy gap from the dimensions */
 .pt-dim-val, .pt-chev { height: 28px; border: none; background: transparent; color: var(--pt-text); cursor: pointer; border-radius: 999px; }
-.pt-dim-val { padding: 0 6px 0 9px; font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; }
+.pt-dim-val { padding: 0 3px 0 9px; font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; }   /* tight on the right so the chevron sits close */
 .pt-dim-val:hover { background: var(--pt-glass); }
-.pt-chev { width: 24px; color: var(--pt-text-faint); font-size: 10px; }
+.pt-chev { width: 22px; display: grid; place-items: center; color: var(--pt-text-faint); }
+.pt-chev svg { display: block; transition: transform .2s cubic-bezier(.22,.61,.36,1); }
+#pt-dim-chev[aria-expanded="true"] svg { transform: rotate(180deg); }   /* chevron-down → chevron-up when the size menu is open */
 .pt-chev:hover { color: var(--pt-text); background: var(--pt-glass); }
 /* Custom mode: the numbers become two live inputs */
 .pt-dim-inputs { display: none; align-items: center; gap: 4px; }   /* no extra left pad — the group sits an even 5px inside the trigger, like the readout */
