@@ -10,6 +10,9 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 - The picker's value reads in **HEX, RGB, HSL, HSB, or CSS** (the CSS field takes any CSS color, named colors included). HEX is the default and the tool remembers the format you last chose. A **copy button** to the right of the boxes copies the value to the clipboard.
 - An **eyedropper** in the picker samples a color from anywhere on screen — outside the browser window included — in browsers that support it (Chrome, Edge, and other Chromium browsers). Where the browser has no such capability (Firefox, Safari), the eyedropper is hidden, since no web page can read pixels outside itself there.
 
+### Fixed
+- The stage is now a plain **rounded rectangle at every size** — desktop sizes no longer square off their top corners. With rulers on, the three corners the ruler strips run past (top-left, **top-right**, and bottom-left) go flat and only the free bottom-right corner keeps its radius.
+
 ## [0.5.1] — 2026-09-14
 
 ### Fixed
