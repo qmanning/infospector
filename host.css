@@ -471,9 +471,10 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 /* hue + alpha sliders */
 .pt-cp-sliders { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
-.pt-cp-sliders input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; margin: 0; padding: 0; border-radius: 999px; cursor: pointer; background: transparent; outline: none; }
-.pt-cp-hue { background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%); box-shadow: inset 0 0 0 1px var(--pt-glass-brd); }
-.pt-cp-alpha { position: relative;
+.pt-cp-sliders input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; margin: 0; padding: 0; border-radius: 999px; cursor: pointer; outline: none; }
+/* selectors kept at least as specific as the base rule above, so the track gradients actually show */
+.pt-cp-sliders input[type="range"].pt-cp-hue { background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%); box-shadow: inset 0 0 0 1px var(--pt-glass-brd); }
+.pt-cp-sliders input[type="range"].pt-cp-alpha { position: relative;
   background:
     linear-gradient(to right, transparent, var(--stop, #000)),
     conic-gradient(var(--pt-check, rgba(0,0,0,.28)) 0 25%, transparent 0 50%, var(--pt-check, rgba(0,0,0,.28)) 0 75%, transparent 0) 0 0 / 10px 10px;
