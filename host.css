@@ -117,7 +117,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-dim { position: relative; }
 .pt-dim-trigger {
   height: 36px; display: inline-flex; align-items: center; gap: 4px;
-  padding: 0 6px 0 4px; border-radius: 18px;
+  padding: 0 4px; border-radius: 18px;   /* symmetric 4px so the inner pills sit an even 5px inside the stadium (concentric) */
   background: var(--pt-glass-2); border: 1px solid var(--pt-glass-brd);
   color: var(--pt-text); white-space: nowrap; transition: border-color .16s, box-shadow .16s;
 }
@@ -130,9 +130,9 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-chev { width: 24px; color: var(--pt-text-faint); font-size: 10px; }
 .pt-chev:hover { color: var(--pt-text); background: var(--pt-glass); }
 /* Custom mode: the numbers become two live inputs */
-.pt-dim-inputs { display: none; align-items: center; gap: 4px; padding-left: 4px; }
+.pt-dim-inputs { display: none; align-items: center; gap: 4px; }   /* no extra left pad — the group sits an even 5px inside the trigger, like the readout */
 .pt-dim-inputs input {
-  width: 58px; height: 28px; text-align: center; border-radius: 14px;   /* concentric: 18 − 4px inset = 14 (a full pill, matching the trigger stadium) */
+  width: 58px; height: 28px; text-align: center; border-radius: 14px;   /* concentric with the 18px stadium: full pills, an even ~5px gap all round */
   border: 1px solid var(--pt-glass-brd-strong); background: color-mix(in srgb, var(--pt-text) 9%, transparent);
   color: var(--pt-text); font: 600 13px var(--pt-font); font-variant-numeric: tabular-nums; outline: none;
   -moz-appearance: textfield;
@@ -494,7 +494,8 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 .pt-cp-eyedrop:active, .pt-cp-copy:active { transform: scale(.94); }
 .pt-cp-eyedrop[hidden] { display: none; }
 .pt-cp-copy.pt-copied { color: var(--pt-done); border-color: var(--pt-done); background: color-mix(in srgb, var(--pt-done) 18%, transparent); }
-.pt-cp-fmt { flex: none; height: 30px; border-radius: 8px; font-size: 10px; }
+/* the extra .pt-cp-fields scope outranks the base .pt-fmt so the row's 30px / 8px win */
+.pt-cp-fields .pt-cp-fmt { flex: none; height: 30px; border-radius: 8px; font-size: 10px; }
 .pt-cp-boxes { flex: 1 1 0; min-width: 0; display: flex; align-items: flex-end; gap: 4px; }
 .pt-cp-f { flex: 1 1 0; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .pt-cp-f > span { font-size: 8.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--pt-text-faint); text-align: center; }
