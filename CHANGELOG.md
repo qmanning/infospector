@@ -14,7 +14,7 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 - A **Padding** dial (under Radius) for the space inside the toolbar and menus.
 
 ### Changed
-- The chrome's corners are now **concentric by formula**: the panel **Radius** and **Padding** drive every nested corner (an inner item rounds to `radius − padding − border`; the toolbar wraps its 18px pill buttons at `18 + padding + border`), so the toolbar, its buttons, the menus and the context panel stay concentric at any padding.
+- The chrome's corners are now **concentric by formula**: one **Radius** and **Padding** drive every nested corner. In the menus and context panel an inner item rounds to `radius − padding − border`; in the toolbar, the buttons, size selector and URL bar round to the Radius (capped at a full 18px pill) and the bar wraps them at `item + padding + border` — so dialing Radius reshapes the whole chrome together, and it stays concentric at any padding.
 - The size dropdown's chevron is a lucide chevron (rotates up when open); more room between the dimensions and the scale %, less between the % and the chevron.
 
 ### Fixed
