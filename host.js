@@ -100,7 +100,7 @@ const el = {
   gaps: $('pt-gaps'), rulerTop: $('pt-ruler-top'), rulerLeft: $('pt-ruler-left'), rulerCorner: $('pt-ruler-corner'), guides: $('pt-guides'),
   ctx: $('pt-ctx'), bgOpacity: $('pt-bg-opacity'), bgOpacityVal: $('pt-bg-opacity-val'),
   colPattern: $('pt-col-pattern'), colPatternTxt: $('pt-col-pattern-txt'), colGround: $('pt-col-ground'), colGroundTxt: $('pt-col-ground-txt'), colAccent: $('pt-col-accent'), colAccentTxt: $('pt-col-accent-txt'),
-  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'),
+  apSave: $('pt-ap-save'), apCopy: $('pt-ap-copy'), colFmt: $('pt-col-fmt'), apToggle: $('pt-ap-toggle'), apBody: $('pt-ap-body'),
   apBlur: $('pt-ap-blur'), apBacking: $('pt-ap-backing'), apSat: $('pt-ap-sat'), apLight: $('pt-ap-light'), apDark: $('pt-ap-dark'), apTint: $('pt-ap-tint'), apColor: $('pt-ap-color'), apColorTxt: $('pt-ap-color-txt'), apReset: $('pt-ap-reset'),
   modals: $('pt-modals'), toast: $('pt-toast')
 };
@@ -1146,6 +1146,7 @@ function loadBg() {
 // ---- color helpers: chips need hex; the text field takes hex / rgb() / hsl() / hsb() ----
 // ---- color formats: fields display in the chosen notation; input still accepts any ----
 const FMT_KEY = 'pt:colorfmt';
+const AP_OPEN_KEY = 'pt:appearance-open';
 function colorFmt() { try { return localStorage.getItem(FMT_KEY) || 'hex'; } catch (e) { return 'hex'; } }
 
 function syncColorInputs() {
@@ -1325,6 +1326,10 @@ function bindRulersAndBg() {
   el.colFmt.addEventListener('change', () => { try { localStorage.setItem(FMT_KEY, el.colFmt.value); } catch (e) { /* ignore */ } syncColorInputs(); syncGlassInputs(); });
   el.apReset.addEventListener('click', resetToDefaults);
   el.apSave.addEventListener('click', saveAsDefaults);
+  // Appearance is a collapsible section; the open/closed state is remembered
+  const setApOpen = (open) => { el.apToggle.setAttribute('aria-expanded', String(open)); el.apBody.hidden = !open; try { localStorage.setItem(AP_OPEN_KEY, open ? '1' : '0'); } catch (e) { /* ignore */ } };
+  el.apToggle.addEventListener('click', () => setApOpen(el.apToggle.getAttribute('aria-expanded') !== 'true'));
+  setApOpen((() => { try { return localStorage.getItem(AP_OPEN_KEY) !== '0'; } catch (e) { return true; } })());
   el.apCopy.addEventListener('click', () => { copyText(configSnippet()); closeCtx(); });
   document.querySelectorAll('.pt-ctx-range input[type="range"]').forEach((inp) => inp.addEventListener('input', updateSliderFills));
   loadBg();

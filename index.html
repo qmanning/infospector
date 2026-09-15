@@ -156,7 +156,8 @@
     <label class="pt-ctx-color" data-tip="The stage size Infospector opens with"><span>Size</span><select class="pt-fmt pt-start-select" id="pt-start-size" aria-label="Start-up size"></select></label>
     <label class="pt-ctx-color" data-tip="The page Infospector opens with (a path on this site, or a full URL)"><span>Page</span><input type="text" id="pt-start-page" placeholder="/" spellcheck="false" aria-label="Start-up page" /></label>
     <div class="pt-menu-div"></div>
-    <div class="pt-ctx-title">Appearance</div>
+    <button type="button" class="pt-ctx-title pt-ctx-sect" id="pt-ap-toggle" aria-expanded="true" aria-controls="pt-ap-body">Appearance<span class="pt-ctx-chev" aria-hidden="true">▾</span></button>
+    <div class="pt-ctx-sect-body" id="pt-ap-body">
     <label class="pt-ctx-range"><span>Blur</span><input type="range" id="pt-ap-blur" min="0" max="100" step="1" /><output id="pt-ap-blur-val"></output></label>
     <label class="pt-ctx-range"><span>Saturation</span><input type="range" id="pt-ap-sat" min="100" max="250" step="5" /><output id="pt-ap-sat-val"></output></label>
     <label class="pt-ctx-range"><span>Highlight</span><input type="range" id="pt-ap-light" min="0" max="2" step="0.1" /><output id="pt-ap-light-val"></output></label>
@@ -168,6 +169,7 @@
       <button class="pt-mini pt-icon-btn" id="pt-ap-reset" aria-label="Reset to Default" data-tip="Reset to Default"></button>
       <button class="pt-mini" id="pt-ap-copy" data-tip="Copy a config.js snippet of this look">Copy config</button>
       <button class="pt-mini pt-primary" id="pt-ap-save" data-tip="Save this look as your defaults (this browser)">Save</button>
+    </div>
     </div>
   </div>
 
