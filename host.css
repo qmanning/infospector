@@ -673,9 +673,13 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 /* Apple-style continuous curvature on the rectangular surfaces (Chromium; ignored elsewhere).
    Round buttons stay true circles. */
 .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-selbox, #pt-tip,
-.pt-dim-row, .pt-omni-item, .pt-menu-item, .pt-ctx-item, .pt-mnote textarea, .pt-mini, .pt-foot-btn, .pt-state-select, .pt-dim-inputs input {
+.pt-dim-row, .pt-omni-item, .pt-menu-item, .pt-ctx-item, .pt-mnote textarea, .pt-mini, .pt-foot-btn, .pt-state-select {
   corner-shape: squircle;
 }
+/* NOT the W × H inputs: they sit inside the round toolbar trigger, so they must be round too.
+   A squircle at a full 14px-on-28px radius draws a superellipse with flat sides and tight
+   corners — it looked "not round enough" even though border-radius was already maxed out. */
+.pt-dim-inputs input { corner-shape: round; }
 
 /* hover states ease in and out instead of snapping */
 .pt-mini, .pt-foot-btn, .pt-menu-item, .pt-ctx-item, .pt-dim-row, .pt-omni-item, .pt-sb-btns button, .pt-mh-btn,

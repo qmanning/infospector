@@ -22,6 +22,7 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 ### Fixed
 - The stage is now a plain **rounded rectangle at every size** — desktop sizes no longer square off their top corners. With rulers on, the three corners the ruler strips run past (top-left, **top-right**, and bottom-left) go flat and only the free bottom-right corner keeps its radius.
 - The **stage message overlays** ("This page can't be framed") are readable again: they now carry their own near-opaque, theme-aware surface and ink, so turning the glass opacity down no longer makes them wash out, and each is topped with a ghosted Infospector glyph.
+- The custom **W × H size inputs** in the toolbar are true pills again. They had been swept into the `corner-shape: squircle` rule meant for the panels, and a squircle at a full 14px-on-28px radius draws a superellipse — flat sides, tight corners — so they never looked round even with `border-radius` already maxed out. They're now explicitly `corner-shape: round`, the same curve as the round trigger they nest in. (Chromium-only property; Safari and Firefox always drew them round.)
 
 ## [0.5.1] — 2026-09-14
 
