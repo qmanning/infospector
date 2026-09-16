@@ -4,12 +4,15 @@
  */
 
 /* ---------------- stage shapes ---------------- */
-// A plain rounded rectangle, whatever the shape. With rulers on, the top and left
-// strips butt against three corners — top-left, top-right, bottom-left — so those
-// square off; only the free bottom-right corner keeps its radius.
+// A rounded rectangle, whatever the shape. A preset may give its left-side corners
+// their own radius (`rLeft`, e.g. a foldable's flat hinge edge); it defaults to `r`.
+// With rulers on, the top and left strips butt against three corners — top-left,
+// top-right, bottom-left — so those square off; only the free bottom-right keeps `r`.
 export function radiusCss(shape, s, rulers) {
-  const r = Math.round(shape.r * s * 10) / 10;
-  return rulers ? `0 0 ${r}px 0` : `${r}px`;
+  const scale = (v) => Math.round(v * s * 10) / 10;
+  const r = scale(shape.r), rl = scale(shape.rLeft == null ? shape.r : shape.rLeft);
+  if (rulers) return `0 0 ${r}px 0`;
+  return rl === r ? `${r}px` : `${rl}px ${r}px ${r}px ${rl}px`;   // TL TR BR BL
 }
 // tick spacing so minor ticks are ≥6px and labeled ticks ≥60px on screen, at any zoom
 export function tickSteps(s) {

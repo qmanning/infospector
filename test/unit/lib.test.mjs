@@ -8,6 +8,12 @@ test('radiusCss: a rounded rectangle; rulers square every corner but bottom-righ
   assert.equal(L.radiusCss({ shape: 'device', r: 44 }, 0.5, false), '22px');
   assert.equal(L.radiusCss({ shape: 'device', r: 44 }, 0.5, true), '0 0 22px 0');
 });
+test('radiusCss: rLeft gives the left corners their own radius (a foldable\'s flat hinge edge)', () => {
+  assert.equal(L.radiusCss({ shape: 'device', r: 55, rLeft: 0 }, 1, false), '0px 55px 55px 0px');   // TL TR BR BL
+  assert.equal(L.radiusCss({ shape: 'device', r: 55, rLeft: 0 }, 0.5, false), '0px 27.5px 27.5px 0px');
+  assert.equal(L.radiusCss({ shape: 'device', r: 55, rLeft: 0 }, 1, true), '0 0 55px 0');     // rulers: same three flat corners
+  assert.equal(L.radiusCss({ shape: 'device', r: 55, rLeft: 55 }, 1, false), '55px');          // equal sides collapse to the compact form
+});
 
 test('tickSteps: minor ticks ≥6px, labeled ticks ≥60px, majors are multiples of minors', () => {
   for (const s of [0.25, 0.5, 0.74, 1, 2]) {

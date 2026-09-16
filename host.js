@@ -31,7 +31,7 @@ const PRESETS = [
   { w: 1920, h: 1080, name: 'HD', shape: 'browser', r: BROWSER_R },
   { w: 2670, h: 1878, name: 'iPhone Duo Inner', shape: 'device', r: 44 },
   { w: 1440, h: 1024, name: 'Figma', shape: 'browser', r: BROWSER_R },
-  { w: 1398, h: 2034, name: 'iPhone Duo Outer', shape: 'device', r: 55 },
+  { w: 1398, h: 2034, name: 'iPhone Duo Outer', shape: 'device', r: 55, rLeft: 0 },   // the front screen: very rounded on the free (right) edge, flat at the hinge (left)
   { w: 1280, h: 960, name: 'iPad Pro', shape: 'device', r: 18 },
   { w: 1280, h: 720, name: 'Laptop', shape: 'browser', r: BROWSER_R },
   { w: 1024, h: 768, name: 'iPad HZ', shape: 'device', r: 18 },
@@ -166,7 +166,8 @@ function fit() {
   // all the clipping — the iframe itself stays square to avoid double anti-aliasing) gets the
   // logical radius minus the 1px border so the two curves sit flush
   el.stage.style.borderRadius = radiusCss(state.shape, s, state.rulers);
-  el.viewport.style.borderRadius = radiusCss({ shape: state.shape.shape, r: Math.max(0, state.shape.r - 1 / s) }, 1, state.rulers);
+  const rLeft = state.shape.rLeft == null ? state.shape.r : state.shape.rLeft;   // the inner viewport keeps the stage's asymmetry, concentric (radius − 1px border)
+  el.viewport.style.borderRadius = radiusCss({ shape: state.shape.shape, r: Math.max(0, state.shape.r - 1 / s), rLeft: Math.max(0, rLeft - 1 / s) }, 1, state.rulers);
   // the rulers take over the corners the stage squared off (top-left via the corner block,
   // bottom-left via the left ruler; device shapes also round the top ruler's far end)
   const rs = Math.round(state.shape.r * s * 10) / 10, dev = state.shape.shape === 'device';
@@ -209,6 +210,8 @@ function layoutBar() {
  *   shape  — corner shape; omitted = plain browser window (used for custom / dragged sizes)
  *   custom — show the inline W × H inputs in the trigger
  */
+// a preset's stage shape: { shape, r }, plus rLeft (a foldable's flat hinge edge) only when the preset gives one
+const presetShape = (p) => (p.rLeft == null ? { shape: p.shape, r: p.r } : { shape: p.shape, r: p.r, rLeft: p.rLeft });
 function setSize(w, h, { animate = true, fill = false, shape = null, custom = false } = {}) {
   state.fillMode = fill;
   state.custom = custom;
@@ -243,7 +246,7 @@ function dimRow(num, name, onPick) {
 function buildDimPop() {
   el.dimPop.innerHTML = '';
   PRESETS.forEach((d) => {
-    const row = dimRow(`${d.w} × ${d.h}`, d.name ? `(${d.name})` : '', () => setSize(d.w, d.h, { shape: { shape: d.shape, r: d.r } }));
+    const row = dimRow(`${d.w} × ${d.h}`, d.name ? `(${d.name})` : '', () => setSize(d.w, d.h, { shape: presetShape(d) }));
     row.dataset.w = d.w; row.dataset.h = d.h;
     el.dimPop.appendChild(row);
   });
@@ -1665,7 +1668,7 @@ function bind() {
 
 // last size the user was looking at, else the largest size the viewport shows unscaled
 // last size used in this browser; the very first time, the 1024×768 preset
-function defaultSize() { try { const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null'); if (s && s.w && s.h) return s; } catch (e) { /* ignore */ } const p = PRESETS.find((x) => x.w === FIRST_SIZE.w && x.h === FIRST_SIZE.h); return { w: FIRST_SIZE.w, h: FIRST_SIZE.h, fill: false, custom: false, shape: p ? { shape: p.shape, r: p.r } : BROWSER_SHAPE }; }
+function defaultSize() { try { const s = JSON.parse(localStorage.getItem(SIZE_KEY) || 'null'); if (s && s.w && s.h) return s; } catch (e) { /* ignore */ } const p = PRESETS.find((x) => x.w === FIRST_SIZE.w && x.h === FIRST_SIZE.h); return { w: FIRST_SIZE.w, h: FIRST_SIZE.h, fill: false, custom: false, shape: p ? presetShape(p) : BROWSER_SHAPE }; }
 
 async function boot() {
   // taken before anything below writes pt:* keys (size, theme, glass, history all persist during boot)
@@ -1675,7 +1678,7 @@ async function boot() {
   // start-up size (right-click → Start-up): last used by default; 1024×768 on a fresh browser
   const ss = startSize(), preset = /^(\d+)x(\d+)$/.exec(ss);
   if (ss === 'last') { const ds = defaultSize(); if (ds.fill) enterFill(); else setSize(ds.w, ds.h, { animate: false, shape: ds.shape || null, custom: !!ds.custom }); }
-  else if (preset) { const p = PRESETS.find((x) => x.w === +preset[1] && x.h === +preset[2]); setSize(+preset[1], +preset[2], { animate: false, shape: p ? { shape: p.shape, r: p.r } : null }); }
+  else if (preset) { const p = PRESETS.find((x) => x.w === +preset[1] && x.h === +preset[2]); setSize(+preset[1], +preset[2], { animate: false, shape: p ? presetShape(p) : null }); }
   else enterFill();
   installRobotApi();
   bindSetup();
