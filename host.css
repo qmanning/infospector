@@ -617,7 +617,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 }
 
 /* surface reflex stack (the pen's .switcher) */
-#pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-toast, #pt-tip, .pt-confirm-card, .pt-sheet-card {
+#pt-bar, .pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-toast, #pt-tip, .pt-confirm-card, .pt-sheet-card, .pt-cpick {
   /* Shine + Shadow (a directional light/dark the angle points) over the Backing (a solid legibility layer under the tint) */
   background-image:
     linear-gradient(calc(var(--glass-light-angle, 145) * 1deg + 180deg), color-mix(in srgb, var(--c-light) calc(var(--glass-shine, 0) * 0.85%), transparent) 0%, color-mix(in srgb, var(--c-light) calc(var(--glass-shine, 0) * 0.28%), transparent) 26%, transparent 55%),
@@ -638,7 +638,13 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
     0 14px 36px -6px       color-mix(in srgb, var(--c-dark) calc(var(--glass-reflex-dark) * 16%), transparent);   /* so the Shadow dial reads on dark grounds too */
 }
 /* Corner radius: the glass panels round to taste (the toolbar keeps its concentric radius) */
-.pt-menu-pop, #pt-ctx, .pt-dim-pop, .pt-omni-results, .pt-modal, .pt-confirm-card, .pt-sheet-card { border-radius: var(--glass-radius, 40px); }
+.pt-menu-pop, #pt-ctx, .pt-dim-pop, .pt-omni-results, .pt-modal, .pt-confirm-card, .pt-sheet-card, .pt-cpick { border-radius: var(--glass-radius, 40px); }
+/* the color picker is a glass surface like the rest: Padding dial inside, every inner corner concentric */
+.pt-cpick { padding: max(6px, var(--glass-pad, 8px)); }
+.pt-cp-sv, .pt-cp-eyedrop, .pt-cp-copy, .pt-cp-fields .pt-cp-fmt, .pt-cp-f input { border-radius: var(--glass-inner-r); }
+/* the square's white/black gradient layers must take the square's exact corner — radius AND squircle shape —
+   or the hue underneath peeks out at the corners */
+.pt-cp-sv-sat, .pt-cp-sv-val { border-radius: inherit; corner-shape: inherit; }
 
 /* control reflex stack (the pen's inner pill) */
 .pt-rbtn, .pt-dim-trigger, .pt-omni input {
@@ -672,7 +678,7 @@ body.pt-fit::after { content: ""; position: fixed; inset: 0; border: 2px solid v
 
 /* Apple-style continuous curvature on the rectangular surfaces (Chromium; ignored elsewhere).
    Round buttons stay true circles. */
-.pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-selbox, #pt-tip,
+.pt-dim-pop, .pt-omni-results, .pt-menu-pop, #pt-ctx, .pt-modal, #pt-selbox, #pt-tip, .pt-cpick, .pt-cp-sv,
 .pt-dim-row, .pt-omni-item, .pt-menu-item, .pt-ctx-item, .pt-mnote textarea, .pt-mini, .pt-foot-btn, .pt-state-select, .pt-dim-inputs input {
   corner-shape: squircle;
 }

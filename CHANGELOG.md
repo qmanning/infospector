@@ -20,6 +20,7 @@ Pull requests add their entry under **Unreleased**; a release moves it under a v
 - New defaults: **Radius 40px** and **Padding 8px** (the Radius dial now runs to 60). The toolbar stays a full pill either way — its items cap at 18px.
 
 ### Fixed
+- The **color picker** is now a full glass surface like every other panel: it carries the Backing, Shine/Shadow and edge highlights, and follows the **Radius** and **Padding** dials (its color square and boxes round concentrically). It used to be bare tint with a fixed corner, so over a light page its labels washed out.
 - The stage is now a plain **rounded rectangle at every size** — desktop sizes no longer square off their top corners. With rulers on, the three corners the ruler strips run past (top-left, **top-right**, and bottom-left) go flat and only the free bottom-right corner keeps its radius.
 - The **stage message overlays** ("This page can't be framed") are readable again: they now carry their own near-opaque, theme-aware surface and ink, so turning the glass opacity down no longer makes them wash out, and each is topped with a ghosted Infospector glyph.
 
